@@ -18,6 +18,7 @@ export default antfu({
     'out/**',
     'dist/**',
     'build/**',
+    'src/components/ui/**',
   ],
 }, {
   rules: {
