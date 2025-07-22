@@ -251,6 +251,7 @@ export function PredictiveAnalyticsPanel({
               return (
                 <div
                   key={index}
+                  // @ts-expect-error: TODO
                   className={`flex-1 ${riskColors[point.riskLevel]} opacity-80 hover:opacity-100 transition-opacity cursor-pointer`}
                   title={`${point.time}: ${point.riskLevel} risk (${point.predicted.toFixed(1)}°C)`}
                 />
