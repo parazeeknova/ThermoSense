@@ -122,7 +122,7 @@ export function NotificationCenter({ recommendations = mockRecommendations }: No
         </CardTitle>
         <p className="text-sm text-gray-600">Personalized recommendations from your thermal advisor</p>
       </CardHeader>
-      <CardContent className="max-h-96 overflow-y-auto space-y-4">
+      <CardContent className="flex-1 overflow-y-auto space-y-4">
         {items.length === 0
           ? (
               <div className="text-center py-8 text-gray-500">

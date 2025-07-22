@@ -23,7 +23,7 @@ export function DraggableCard({
       onDragEnd={onDragEnd}
       onDragOver={onDragOver}
       onDrop={e => onDrop(e, id)}
-      className={`group cursor-move relative transition-all duration-200 ${isDragging ? 'opacity-50 scale-95' : ''}`}
+      className={`group cursor-move relative transition-all duration-200 h-full ${isDragging ? 'opacity-50 scale-95' : ''}`}
     >
       {isDropTarget && (
         <div className="absolute inset-0 bg-emerald-500/20 border-2 border-emerald-400 border-dashed rounded-xl z-20 animate-pulse">
@@ -33,13 +33,15 @@ export function DraggableCard({
         </div>
       )}
 
-      <div className="relative">
+      <div className="relative h-full">
         <div className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-10">
           <div className="p-1 bg-gray-800/80 rounded border border-gray-700/50 backdrop-blur-sm">
             <GripVertical className="w-4 h-4 text-gray-300" />
           </div>
         </div>
-        {children}
+        <div className="h-full">
+          {children}
+        </div>
       </div>
     </div>
   )

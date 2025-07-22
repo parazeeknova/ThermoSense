@@ -77,20 +77,20 @@ export function SidebarNavigation({
             <Activity className="w-6 h-6 text-white" />
           </div>
           {!isCollapsed && (
-            <div className="transition-opacity duration-300">
-              <h2 className="text-xl font-bold text-gray-900">ThermoSense</h2>
-              <p className="text-sm text-gray-600">Battery Health Advisor</p>
+            <div className="transition-opacity duration-300 min-w-0">
+              <h2 className="text-xl font-bold text-gray-900 truncate">ThermoSense</h2>
+              <p className="text-sm text-gray-600 truncate">Battery Health Advisor</p>
             </div>
           )}
         </div>
 
         {!isCollapsed && (
           <div className="flex items-center justify-between p-3 bg-emerald-50 rounded-lg border border-emerald-200 transition-opacity duration-300">
-            <div className="flex items-center space-x-2">
-              <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></div>
-              <span className="text-sm font-medium text-emerald-800">System Active</span>
+            <div className="flex items-center space-x-2 min-w-0">
+              <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse flex-shrink-0"></div>
+              <span className="text-sm font-medium text-emerald-800 truncate">System Active</span>
             </div>
-            <Badge variant="outline" className="text-emerald-600 border-emerald-300">
+            <Badge variant="outline" className="text-emerald-600 border-emerald-300 flex-shrink-0">
               Live
             </Badge>
           </div>
@@ -126,9 +126,9 @@ export function SidebarNavigation({
                 }`}
                 title={isCollapsed ? config.title : undefined}
               >
-                <div className={`flex items-center ${isCollapsed ? 'justify-center' : 'space-x-4'} w-full`}>
+                <div className={`flex items-center ${isCollapsed ? 'justify-center' : 'space-x-4'} w-full min-w-0`}>
                   <div
-                    className={`${isCollapsed ? 'p-1' : 'p-2'} rounded-lg transition-colors ${
+                    className={`${isCollapsed ? 'p-1' : 'p-2'} rounded-lg transition-colors flex-shrink-0 ${
                       isActive ? 'bg-white/20' : `bg-${config.color}-100`
                     }`}
                   >
@@ -137,16 +137,16 @@ export function SidebarNavigation({
                     </div>
                   </div>
                   {!isCollapsed && (
-                    <div className="flex-1 text-left">
+                    <div className="flex-1 text-left min-w-0">
                       <div
-                        className={`font-semibold transition-colors ${
+                        className={`font-semibold transition-colors truncate ${
                           isActive ? 'text-white' : 'text-gray-900'
                         }`}
                       >
                         {config.title}
                       </div>
                       <div
-                        className={`text-sm transition-colors ${
+                        className={`text-sm transition-colors truncate ${
                           isActive ? 'text-white/80' : 'text-gray-500'
                         }`}
                       >
@@ -155,7 +155,7 @@ export function SidebarNavigation({
                     </div>
                   )}
                   {!isCollapsed && page === 'monitoring' && unreadNotifications > 0 && (
-                    <Badge className="bg-red-500 text-white text-xs">
+                    <Badge className="bg-red-500 text-white text-xs flex-shrink-0">
                       {unreadNotifications}
                     </Badge>
                   )}
@@ -181,63 +181,63 @@ export function SidebarNavigation({
       </div>
 
       {!isCollapsed && (
-        <div className="p-6 border-t border-gray-200/50">
+        <div className="p-6 border-t border-gray-200/50 overflow-y-auto flex-1">
           <div className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-4">
             System Overview
           </div>
 
           <div className="space-y-4">
             <div className="flex items-center justify-between p-3 bg-blue-50 rounded-lg">
-              <div className="flex items-center space-x-2">
-                <Wifi className="w-4 h-4 text-blue-600" />
-                <span className="text-sm font-medium text-blue-800">Connection</span>
+              <div className="flex items-center space-x-2 min-w-0">
+                <Wifi className="w-4 h-4 text-blue-600 flex-shrink-0" />
+                <span className="text-sm font-medium text-blue-800 truncate">Connection</span>
               </div>
-              <Badge variant="outline" className="text-blue-600 border-blue-300 text-xs">
+              <Badge variant="outline" className="text-blue-600 border-blue-300 text-xs flex-shrink-0">
                 Stable
               </Badge>
             </div>
 
             <div className="p-3 bg-orange-50 rounded-lg">
               <div className="flex items-center justify-between mb-2">
-                <div className="flex items-center space-x-2">
-                  <Battery className="w-4 h-4 text-orange-600" />
-                  <span className="text-sm font-medium text-orange-800">Battery Health</span>
+                <div className="flex items-center space-x-2 min-w-0">
+                  <Battery className="w-4 h-4 text-orange-600 flex-shrink-0" />
+                  <span className="text-sm font-medium text-orange-800 truncate">Battery Health</span>
                 </div>
-                <span className="text-xs text-orange-600">78%</span>
+                <span className="text-xs text-orange-600 flex-shrink-0">78%</span>
               </div>
               <Progress value={78} className="h-2" />
             </div>
 
             <div className="p-3 bg-red-50 rounded-lg">
               <div className="flex items-center justify-between mb-2">
-                <div className="flex items-center space-x-2">
-                  <Thermometer className="w-4 h-4 text-red-600" />
-                  <span className="text-sm font-medium text-red-800">Temperature</span>
+                <div className="flex items-center space-x-2 min-w-0">
+                  <Thermometer className="w-4 h-4 text-red-600 flex-shrink-0" />
+                  <span className="text-sm font-medium text-red-800 truncate">Temperature</span>
                 </div>
-                <span className="text-xs text-red-600">42°C</span>
+                <span className="text-xs text-red-600 flex-shrink-0">42°C</span>
               </div>
               <div className="flex items-center space-x-2">
-                <TrendingUp className="w-3 h-3 text-red-500" />
-                <span className="text-xs text-red-600">Rising</span>
+                <TrendingUp className="w-3 h-3 text-red-500 flex-shrink-0" />
+                <span className="text-xs text-red-600 truncate">Rising</span>
               </div>
             </div>
 
             <div className="flex items-center justify-between p-3 bg-purple-50 rounded-lg">
-              <div className="flex items-center space-x-2">
-                <Shield className="w-4 h-4 text-purple-600" />
-                <span className="text-sm font-medium text-purple-800">AI Protection</span>
+              <div className="flex items-center space-x-2 min-w-0">
+                <Shield className="w-4 h-4 text-purple-600 flex-shrink-0" />
+                <span className="text-sm font-medium text-purple-800 truncate">AI Protection</span>
               </div>
-              <Badge variant="outline" className="text-purple-600 border-purple-300 text-xs">
+              <Badge variant="outline" className="text-purple-600 border-purple-300 text-xs flex-shrink-0">
                 Active
               </Badge>
             </div>
 
             <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-              <div className="flex items-center space-x-2">
-                <Calendar className="w-4 h-4 text-gray-600" />
-                <span className="text-sm font-medium text-gray-800">Last Sync</span>
+              <div className="flex items-center space-x-2 min-w-0">
+                <Calendar className="w-4 h-4 text-gray-600 flex-shrink-0" />
+                <span className="text-sm font-medium text-gray-800 truncate">Last Sync</span>
               </div>
-              <span className="text-xs text-gray-600">2m ago</span>
+              <span className="text-xs text-gray-600 flex-shrink-0">2m ago</span>
             </div>
           </div>
         </div>
@@ -256,8 +256,8 @@ export function SidebarNavigation({
           className={`w-full ${isCollapsed ? 'px-2' : 'justify-start'}`}
           title={isCollapsed ? 'Settings' : undefined}
         >
-          <Settings className="w-4 h-4 mr-2" />
-          {!isCollapsed && 'Settings'}
+          <Settings className="w-4 h-4 mr-2 flex-shrink-0" />
+          {!isCollapsed && <span className="truncate">Settings</span>}
         </Button>
 
         <Button
@@ -266,10 +266,10 @@ export function SidebarNavigation({
           className={`w-full ${isCollapsed ? 'px-2 relative' : 'justify-start'}`}
           title={isCollapsed ? 'Notifications' : undefined}
         >
-          <Bell className="w-4 h-4 mr-2" />
-          {!isCollapsed && 'Notifications'}
+          <Bell className="w-4 h-4 mr-2 flex-shrink-0" />
+          {!isCollapsed && <span className="truncate">Notifications</span>}
           {unreadNotifications > 0 && (
-            <Badge className={`${isCollapsed ? 'absolute -top-1 -right-1' : 'ml-auto'} bg-red-500 text-white text-xs`}>
+            <Badge className={`${isCollapsed ? 'absolute -top-1 -right-1' : 'ml-auto'} bg-red-500 text-white text-xs flex-shrink-0`}>
               {unreadNotifications > 9 ? '9+' : unreadNotifications}
             </Badge>
           )}
@@ -281,16 +281,16 @@ export function SidebarNavigation({
           className={`w-full ${isCollapsed ? 'px-2' : 'justify-start'}`}
           title={isCollapsed ? 'Export Data' : undefined}
         >
-          <BarChart3 className="w-4 h-4 mr-2" />
-          {!isCollapsed && 'Export Data'}
+          <BarChart3 className="w-4 h-4 mr-2 flex-shrink-0" />
+          {!isCollapsed && <span className="truncate">Export Data</span>}
         </Button>
       </div>
 
       {!isCollapsed && (
         <div className="p-6 border-t border-gray-200/50 mt-auto">
           <div className="text-center">
-            <div className="text-xs text-gray-500">ThermoSense v1.0</div>
-            <div className="text-xs text-gray-400 mt-1">Battery Health Monitoring</div>
+            <div className="text-xs text-gray-500 truncate">ThermoSense v1.0</div>
+            <div className="text-xs text-gray-400 mt-1 truncate">Battery Health Monitoring</div>
           </div>
         </div>
       )}

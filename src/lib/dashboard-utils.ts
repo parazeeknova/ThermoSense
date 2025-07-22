@@ -1,4 +1,4 @@
-import type { DeviceType, DeviceUsageData, RiskLevel, RiskStatus, TemperatureData } from '@/types/dashboard'
+import type { DeviceUsageData, RiskLevel, RiskStatus, TemperatureData } from '@/types/dashboard'
 
 export function getRiskLevel(deviceTemp: number, outdoorTemp: number): RiskStatus {
   const tempDiff = deviceTemp - outdoorTemp
@@ -7,25 +7,6 @@ export function getRiskLevel(deviceTemp: number, outdoorTemp: number): RiskStatu
   if (tempDiff > 8 || deviceTemp > 40)
     return 'caution'
   return 'safe'
-}
-
-export function getGuidanceMessage(
-  deviceTemp: number,
-  outdoorTemp: number,
-  device: DeviceType,
-): string {
-  const risk = getRiskLevel(deviceTemp, outdoorTemp)
-  const deviceName = device === 'laptop' ? 'laptop' : 'mobile'
-
-  if (risk === 'critical') {
-    return `Your ${deviceName} battery is ${deviceTemp.toFixed(1)}°C while it's ${outdoorTemp.toFixed(1)}°C outside. Immediately move to a cooler location, reduce screen brightness, and close unnecessary apps to prevent damage.`
-  }
-  else if (risk === 'caution') {
-    return `Your ${deviceName} battery is ${deviceTemp.toFixed(1)}°C while it's ${outdoorTemp.toFixed(1)}°C outside. Consider moving to a cooler spot or reducing screen brightness to maintain optimal performance.`
-  }
-  else {
-    return `Your ${deviceName} battery temperature (${deviceTemp.toFixed(1)}°C) is well within safe limits given the outdoor temperature (${outdoorTemp.toFixed(1)}°C). Continue normal usage.`
-  }
 }
 
 // Mock data for temperature correlation

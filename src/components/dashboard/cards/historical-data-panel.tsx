@@ -92,7 +92,7 @@ export function HistoricalDataPanel({
     URL.revokeObjectURL(url)
   }
 
-  const renderChart = () => {
+  const _renderChart = () => {
     switch (selectedMetric) {
       case 'temperature':
         return (
@@ -315,7 +315,65 @@ export function HistoricalDataPanel({
         </div>
 
         <div className="border rounded-lg p-4 bg-white">
-          {renderChart()}
+          <ChartContainer config={chartConfig} className="h-[300px] w-full">
+            <LineChart data={data} margin={{ top: 10, right: 30, left: 10, bottom: 30 }}>
+              <CartesianGrid strokeDasharray="2 2" stroke="#E5E7EB" opacity={0.5} />
+              <XAxis
+                dataKey="timestamp"
+                stroke="#6B7280"
+                fontSize={11}
+                tickFormatter={(value) => {
+                  const date = new Date(value)
+                  if (timeRange === '30min') {
+                    return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                  }
+                  else if (timeRange === '1hour') {
+                    return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                  }
+                  else if (timeRange === '24hours') {
+                    return date.toLocaleTimeString([], { hour: '2-digit' })
+                  }
+                  else {
+                    return date.toLocaleDateString([], { month: 'short', day: 'numeric' })
+                  }
+                }}
+              />
+              <YAxis stroke="#6B7280" fontSize={11} />
+              <ChartTooltip
+                content={<ChartTooltipContent />}
+                contentStyle={{
+                  backgroundColor: '#FFFFFF',
+                  border: '1px solid #E5E7EB',
+                  borderRadius: '8px',
+                  color: '#1F2937',
+                }}
+              />
+              <Line
+                type="monotone"
+                dataKey="batteryTemp"
+                stroke="#EF4444"
+                strokeWidth={2}
+                dot={false}
+                activeDot={{ r: 4, fill: '#EF4444' }}
+              />
+              <Line
+                type="monotone"
+                dataKey="ambientTemp"
+                stroke="#10B981"
+                strokeWidth={2}
+                dot={false}
+                activeDot={{ r: 4, fill: '#10B981' }}
+              />
+              <Line
+                type="monotone"
+                dataKey="cpuLoad"
+                stroke="#3B82F6"
+                strokeWidth={2}
+                dot={false}
+                activeDot={{ r: 4, fill: '#3B82F6' }}
+              />
+            </LineChart>
+          </ChartContainer>
         </div>
 
         <div className="space-y-2">
