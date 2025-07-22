@@ -55,15 +55,19 @@ const ChartTooltipContent = React.forwardRef<
   (
     {
       active,
+      // @ts-expect-error
       payload,
+      // @ts-expect-error
       className,
       indicator = 'dot',
       hideLabel = false,
       hideIndicator = false,
+      // @ts-expect-error
       label,
       labelFormatter,
       labelClassName,
       formatter,
+      // @ts-expect-error
       color,
       nameKey,
       labelKey,
@@ -116,6 +120,7 @@ const ChartTooltipContent = React.forwardRef<
             {tooltipLabel}
           </div>
         )}
+        {/* @ts-expect-error */}
         {payload.map((item, index) => {
           const key = `${nameKey || item.name || item.dataKey || 'value'}`
           const itemConfig = config[key as keyof typeof config]

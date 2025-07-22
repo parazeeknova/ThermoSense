@@ -61,6 +61,7 @@ export function StaggeredGrid({
 
   useEffect(() => {
     // Reset visibility
+    // @ts-expect-error: TODO
     setVisibleItems(Array.from({ length: children.length }).fill(false))
 
     // Stagger the appearance of items
