@@ -1,8 +1,8 @@
 'use client'
 
 import type { DeviceConfiguration } from '@/types/dashboard'
-import { Bell, Bluetooth, Laptop, Plus, Power, Settings, Smartphone, Thermometer, Trash2, Wifi } from 'lucide-react'
-import React, { useState } from 'react'
+import { Bell, Bluetooth, Database, Download, Laptop, Plus, Power, Settings, Smartphone, Thermometer, Trash2, Upload, Wifi } from 'lucide-react'
+import { useState } from 'react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -326,6 +326,84 @@ export function DeviceConfigPanel({ devices = mockDevices }: DeviceConfigPanelPr
             </div>
           </div>
         )}
+
+        {/* System Overview Section */}
+        <div className="space-y-3 border-t pt-4">
+          <div className="flex items-center justify-between">
+            <h4 className="text-sm font-medium text-gray-700">System Overview</h4>
+            <Badge className="bg-blue-100 text-blue-800 text-xs">
+              {deviceList.filter(d => d.isActive).length}
+              {' '}
+              Active
+            </Badge>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div className="p-3 bg-gradient-to-r from-emerald-50 to-emerald-100 rounded-lg">
+              <div className="flex items-center space-x-2 mb-1">
+                <Thermometer className="w-4 h-4 text-emerald-600" />
+                <span className="text-xs font-medium text-emerald-800">Temperature Monitoring</span>
+              </div>
+              <div className="text-lg font-bold text-emerald-700">
+                {deviceList.filter(d => d.sensorEnabled).length}
+                /
+                {deviceList.length}
+              </div>
+              <div className="text-xs text-emerald-600">Sensors enabled</div>
+            </div>
+
+            <div className="p-3 bg-gradient-to-r from-blue-50 to-blue-100 rounded-lg">
+              <div className="flex items-center space-x-2 mb-1">
+                <Bell className="w-4 h-4 text-blue-600" />
+                <span className="text-xs font-medium text-blue-800">Notifications</span>
+              </div>
+              <div className="text-lg font-bold text-blue-700">
+                {deviceList.filter(d => d.notifications.enabled).length}
+                /
+                {deviceList.length}
+              </div>
+              <div className="text-xs text-blue-600">Alerts active</div>
+            </div>
+          </div>
+        </div>
+
+        <div className="space-y-3 border-t pt-4">
+          <h4 className="text-sm font-medium text-gray-700 flex items-center">
+            <Database className="w-4 h-4 mr-2 text-purple-600" />
+            Data Synchronization
+          </h4>
+
+          <div className="grid grid-cols-2 gap-2">
+            <Button variant="outline" size="sm" className="flex items-center justify-center">
+              <Upload className="w-3 h-3 mr-1" />
+              <span className="text-xs">Sync Now</span>
+            </Button>
+            <Button variant="outline" size="sm" className="flex items-center justify-center">
+              <Download className="w-3 h-3 mr-1" />
+              <span className="text-xs">Export Data</span>
+            </Button>
+          </div>
+
+          <div className="p-2 bg-purple-50 rounded border border-purple-200">
+            <div className="flex items-center justify-between text-xs">
+              <span className="text-purple-700">Last backup</span>
+              <span className="text-purple-600 font-medium">2 hours ago</span>
+            </div>
+            <div className="flex items-center justify-between text-xs mt-1">
+              <span className="text-purple-700">Data size</span>
+              <span className="text-purple-600 font-medium">2.4 MB</span>
+            </div>
+          </div>
+        </div>
+
+        <div className="space-y-3 border-t pt-4">
+          <div className="p-2 bg-gradient-to-r from-gray-50 to-blue-50 rounded border">
+            <div className="text-center">
+              <div className="text-xs text-gray-600 mb-1">Total monitoring time</div>
+              <div className="text-sm font-bold text-blue-700">47 days, 12 hours</div>
+            </div>
+          </div>
+        </div>
 
         {showAddDevice && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">

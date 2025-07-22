@@ -5,10 +5,6 @@ import React, { useEffect, useState } from 'react'
 import { getRiskLevel } from '@/lib/dashboard-utils'
 import { BlueprintGrid } from './blueprint-grid'
 import { BatteryCard } from './cards/battery-card'
-import {
-  BatteryHealthCard,
-  TemperatureCorrelationCard,
-} from './cards/chart-cards'
 import { DeviceConfigPanel } from './cards/device-config-panel'
 import { HeatRiskMeter } from './cards/heat-risk-meter'
 import { HistoricalDataPanel } from './cards/historical-data-panel'
@@ -31,11 +27,9 @@ const bentoLayouts: Record<DashboardPage, Record<string, string>> = {
     'notification-center': 'col-span-2 row-span-2',
   },
   analytics: {
-    'temp-correlation': 'col-span-2 row-span-2',
-    'battery-health': 'col-span-2 row-span-2',
-    'predictive-analytics': 'col-span-3 row-span-2',
-    'device-config': 'col-span-1 row-span-2',
-    'historical-data': 'col-span-4 row-span-1',
+    'historical-data': 'col-span-4 row-span-2',
+    'predictive-analytics': 'col-span-2 row-span-2',
+    'device-config': 'col-span-2 row-span-2',
   },
 }
 
@@ -50,11 +44,9 @@ const pageCards = {
     { id: 'notification-center' },
   ],
   analytics: [
-    { id: 'temp-correlation' },
-    { id: 'battery-health' },
+    { id: 'historical-data' },
     { id: 'predictive-analytics' },
     { id: 'device-config' },
-    { id: 'historical-data' },
   ],
 }
 
@@ -195,7 +187,12 @@ export default function BatteryTempDashboard() {
           <div className="max-w-none mx-auto h-full">
             <PageTransition pageKey={currentPage}>
               {/* Desktop/Tablet Bento Grid */}
-              <div className="hidden lg:grid grid-cols-4 gap-3 w-full h-full" style={{ gridAutoRows: 'minmax(140px, 1fr)' }}>
+              <div
+                className="hidden lg:grid grid-cols-4 gap-3 w-full h-full"
+                style={{
+                  gridAutoRows: currentPage === 'analytics' ? 'minmax(120px, auto)' : 'minmax(140px, 1fr)',
+                }}
+              >
                 {currentCardOrder.map(cardItem => (
                   <div
                     key={cardItem.id}
@@ -233,10 +230,6 @@ export default function BatteryTempDashboard() {
                               )
                             case 'notification-center':
                               return <NotificationCenter />
-                            case 'temp-correlation':
-                              return <TemperatureCorrelationCard />
-                            case 'battery-health':
-                              return <BatteryHealthCard />
                             case 'weather-location':
                               return <WeatherLocationPanel />
                             case 'predictive-analytics':
@@ -293,10 +286,6 @@ export default function BatteryTempDashboard() {
                             )
                           case 'notification-center':
                             return <NotificationCenter />
-                          case 'temp-correlation':
-                            return <TemperatureCorrelationCard />
-                          case 'battery-health':
-                            return <BatteryHealthCard />
                           case 'weather-location':
                             return <WeatherLocationPanel />
                           case 'predictive-analytics':
@@ -352,10 +341,6 @@ export default function BatteryTempDashboard() {
                             )
                           case 'notification-center':
                             return <NotificationCenter />
-                          case 'temp-correlation':
-                            return <TemperatureCorrelationCard />
-                          case 'battery-health':
-                            return <BatteryHealthCard />
                           case 'weather-location':
                             return <WeatherLocationPanel />
                           case 'predictive-analytics':
