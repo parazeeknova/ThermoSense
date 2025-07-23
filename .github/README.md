@@ -15,84 +15,19 @@
 
 > An intelligent thermal management system that helps users understand how ambient weather affects their device's thermal state, predict overheating risks, and take preventive actions through AI-powered insights.
 
-## Table of Contents
-
-- [Project Overview](#-project-overview)
-- [Technical Features](#-technical-features)
-- [Tech Stack](#-tech-stack)
-- [Setup & Installation](#-setup--installation)
-- [How to Run](#-how-to-run)
-- [Methodology & Architecture](#-methodology--architecture)
-- [Key Code Snippets](#-key-code-snippets)
-- [Results & Analysis](#-results--analysis)
-- [Project Structure](#️-project-structure)
 
 ## Project Overview
 
 ThermoSense is **ambient-aware battery health advisor** that bridges the gap between environmental conditions and device thermal management. The application provides real-time monitoring, predictive analytics, and AI-powered recommendations to optimize device performance and battery longevity.
 
-## 🔧 Technical Features
-
-| Feature Category | Component | Description |
-|------------------|-----------|-------------|
-| **Real-Time Monitoring** | | |
-| | Device Temperature Tracking | CPU temperature monitoring with multi-core support |
-| | Battery Health Analytics | Comprehensive battery metrics including cycle count, capacity, and charging status |
-| | System Performance Monitoring | CPU load, memory usage, and system health indicators |
-| | Live Dashboard | Real-time updates every 2 seconds with interactive visualizations |
-| **Weather Integration** | | |
-| | OpenWeatherMap API | Real-time ambient temperature and weather conditions |
-| | Location Services | GPS-based or manual location selection |
-| | UV Index Monitoring | Additional environmental factor tracking |
-| | Weather Correlation | Analysis of weather impact on device thermal behavior |
-| **AI-Powered Analytics** | | |
-| | Google Gemini Integration | Advanced AI for predictive analytics and recommendations |
-| | Smart Recommendations | Context-aware suggestions for thermal management |
-| | Predictive Analytics | Future temperature trend predictions with confidence levels |
-| | Risk Assessment | Advanced heat risk calculation with multiple factors |
-| **Data Analytics** | | |
-| | Historical Data Tracking | Persistent storage of device and environmental data |
-| | Trend Analysis | Long-term pattern recognition and correlation analysis |
-| | Interactive Charts | Recharts-powered visualizations for data insights |
-| | Export Functionality | Data export for further analysis |
-| **User Experience** | | |
-| | Responsive Design | Mobile-first approach with adaptive layouts |
-| | Drag & Drop Interface | Customizable dashboard with rearrangeable components |
-| | Real-Time Notifications | Instant alerts for thermal risks |
-| | Progressive Enhancement | Graceful degradation for various device capabilities |
-
-## Tech Stack
-
-| Category | Technology | Version/Details |
-|----------|------------|-----------------|
-| **Frontend** | | |
-| Framework | Next.js | 15.4.2 with App Router |
-| UI Library | React | 19.1.0 with TypeScript |
-| Styling | Tailwind CSS | 4.1.11 + Radix UI Components |
-| State Management | TanStack React Query | For server state |
-| Charts | Recharts | For data visualization |
-| Icons | Lucide React | - |
-| **Backend & APIs** | | |
-| Runtime | Node.js | With Next.js API Routes |
-| System Info | systeminformation | Library for hardware data |
-| AI Service | Google Gemini API | For recommendations |
-| Weather Service | OpenWeatherMap API | - |
-| Environment | T3 Env | With Zod validation |
-| **Development & Deployment** | | |
-| Package Manager | Bun | For fast package management |
-| Linting | ESLint | With Antfu config |
-| Type Checking | TypeScript | With strict mode |
-| Containerization | Docker | With optimized multi-stage builds |
-| Development Server | Turbopack | For fast hot reloading |
-
 ## Setup & Installation
 
 ### Prerequisites
-- **Node.js**: Version 18.0 or higher
-- **Bun**: Latest version (recommended) or npm/yarn
-- **System Access**: Permission to read hardware information
+**Node.js**: Version 18.0 or higher |
+**Bun**: Latest version (recommended) or npm/yarn |
+**System Access**: Permission to read hardware information
 
-### Environment Variables
+### Environment Variables - Required for AI & Weather
 Create a `.env.local` file in the root directory:
 
 ```bash
@@ -103,25 +38,15 @@ NEXT_PUBLIC_OPENWEATHER_API_KEY=your_openweather_api_key_here
 ```
 
 ### Installation Steps
-
-1. **Clone the Repository**
 ```bash
 git clone https://github.com/parazeeknova/thermosense.git
 cd thermosense
-```
 
-2. **Install Dependencies**
-```bash
 # Using Bun (recommended)
 bun install
 # Or using npm
 npm install
-```
 
-## How to Run
-
-### Development Mode
-```bash
 # Start development server with Turbopack
 bun run dev
 
@@ -148,6 +73,8 @@ docker-compose up -d
 # Access at http://localhost:3000
 ```
 
+## Key Code Snippets
+
 ### Risk Assessment Algorithm
 The heat risk calculation uses a weighted scoring system:
 
@@ -163,9 +90,8 @@ const weights = {
 }
 ```
 
-## Key Code Snippets
-
 ### 1. Real-Time Device Monitoring Hook
+This React hook serves as the backbone for continuous device hardware monitoring in the ThermoSense application. The `useDeviceInfo` function leverages TanStack Query to automatically fetch device information every 2 seconds, ensuring users receive real-time updates on CPU temperature, battery status, and system load. The hook implements sophisticated caching strategies with configurable stale time and garbage collection periods to optimize performance while maintaining data freshness. It includes robust error handling with exponential backoff retry logic, attempting up to 3 retries with increasing delays to handle temporary network issues gracefully. Additionally, the hook coordinates with other data sources through cache invalidation, automatically triggering updates to historical data when new device information arrives, ensuring all dashboard components remain synchronized.
 
 ```typescript
 // src/hooks/use-device-info.ts
@@ -175,7 +101,7 @@ export function useDeviceInfo() {
   const query = useQuery({
     queryKey: deviceInfoKeys.current(),
     queryFn: fetchDeviceInfo,
-    refetchInterval: 2000, // Refresh every 2 seconds
+    refetchInterval: 2000,
     staleTime: 1000,
     gcTime: 5000,
     retry: 3,
@@ -197,6 +123,7 @@ export function useDeviceInfo() {
 ```
 
 ### 2. AI-Powered Recommendations Service
+The `generateRecommendations` method represents the core AI integration that transforms raw sensor data into actionable thermal management insights. This service constructs detailed prompts for Google Gemini AI, incorporating current device metrics such as temperature, battery level, CPU usage, and ambient weather conditions. The AI is specifically instructed to focus on four key areas: immediate thermal risks and solutions, battery health optimization strategies, performance versus temperature trade-offs, and environmental adaptation suggestions. The service sends structured requests to the Gemini API and processes the responses to return parsed recommendations with different alert levels and specific actions. This intelligent system adapts its advice based on real-time conditions, providing users with contextually relevant suggestions that help prevent overheating and optimize device performance based on current environmental and usage patterns.
 
 ```typescript
 // src/lib/gemini-service.ts
@@ -222,7 +149,8 @@ Focus on:
 }
 ```
 
-### 3. Advanced Heat Risk Calculation
+### 3. Advanced Heat Risk Calculation (core)
+The `calculateAdvancedRisk` function implements a multi-factor risk assessment algorithm, This algorithm analyzes the relationship between device temperature and ambient conditions, calculates trends from historical data points, and applies a weighted scoring system where different factors contribute proportionally to the overall risk assessment. The temperature difference between device and ambient environment carries the highest weight at 30%, followed by absolute device temperature at 25%, CPU load at 20%, temperature trends at 15%, and environmental factors like humidity and time of day contributing smaller but significant portions. The algorithm also incorporates temporal patterns, recognizing that peak hours between 12 PM and 6 PM typically present higher thermal stress. The function returns a comprehensive risk calculation that includes categorical risk levels (low, medium, high, critical), numerical scores, detailed breakdowns of contributing factors, and predictive temperature estimates for the next hour, providing users with both immediate risk awareness and forward-looking thermal intelligence.
 
 ```typescript
 // src/components/dashboard/cards/heat-risk-meter.tsx
@@ -234,7 +162,7 @@ const calculateAdvancedRisk = (
   humidity: number = 50,
 ): RiskCalculation => {
   const tempDiff = deviceTemp - ambientTemp
-  
+
   // Calculate trend from historical data
   let trend = 0
   if (history.length >= 3) {
@@ -271,54 +199,10 @@ const calculateAdvancedRisk = (
     risk: totalRisk < 25 ? 'low' : totalRisk < 50 ? 'medium' : totalRisk < 75 ? 'high' : 'critical',
     value: Math.round(totalRisk),
     breakdown: factors,
-    prediction: deviceTemp + (trend * 0.5) // Predict next hour temperature
+    prediction: deviceTemp + (trend * 0.5)
   }
 }
 ```
-
-## Results & Analysis
-
-### Performance Metrics
-
-#### System Performance
-- **Data Refresh Rate**: 2-second intervals for real-time monitoring
-- **API Response Time**: Average 150-300ms for device info
-- **Weather Data Latency**: 500-1000ms depending on location
-- **UI Responsiveness**: <50ms interaction feedback
-
-#### Accuracy Measurements
-- **Temperature Correlation**: 85-95% accuracy between device and ambient temperature correlation
-- **Battery Health Prediction**: 80-90% accuracy for degradation patterns
-- **Risk Assessment**: 75-85% accuracy in identifying thermal events
-- **AI Recommendation Relevance**: 90%+ user satisfaction in testing
-
-### Data Insights
-
-#### Thermal Patterns Discovered
-1. **Peak Risk Hours**: 12 PM - 6 PM show highest thermal stress
-2. **Weather Correlation**: Strong correlation (r=0.7-0.8) between ambient temp and device temp
-3. **Battery Impact**: Every 10°C increase reduces battery efficiency by 8-12%
-4. **CPU Load Factor**: High CPU usage (>70%) increases thermal risk by 40%
-
-#### User Behavior Analysis
-- **Dashboard Usage**: Monitoring page used 70% of time vs Analytics 30%
-- **Recommendation Adoption**: 65% of users follow AI recommendations
-- **Alert Response**: 80% immediate response rate to critical thermal alerts
-- **Data Export**: 25% of users export data for further analysis
-
-### Technical Achievements
-
-#### Innovation Highlights
-1. **Real-Time Correlation**: First-of-its-kind real-time weather-device correlation
-2. **AI Integration**: Successful implementation of context-aware recommendations
-3. **Cross-Platform**: Works across desktop, laptop, and mobile devices
-4. **Predictive Accuracy**: 85% accuracy in predicting thermal events 1 hour ahead
-
-#### Problem-Solving Approach
-1. **Hardware Abstraction**: Unified interface for different system information sources
-2. **API Resilience**: Graceful degradation when external APIs are unavailable
-3. **Data Persistence**: Local storage for offline functionality
-4. **Performance Optimization**: Query caching and intelligent refresh strategies
 
 ## Project Structure
 
