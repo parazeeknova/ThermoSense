@@ -53,6 +53,7 @@ export function WeatherLocationPanel({
       }
       catch (err) {
         console.error('Failed to update location:', err)
+        // Error will be shown via the error state from useWeather hook
       }
     }
   }
@@ -196,6 +197,28 @@ export function WeatherLocationPanel({
           <div className="mt-2 p-2 bg-yellow-50 border border-yellow-200 rounded text-yellow-800 text-sm">
             <AlertCircle className="w-4 h-4 inline mr-1" />
             {error instanceof Error ? error.message : 'An error occurred'}
+            {error instanceof Error && error.message.includes('API key') && (
+              <div className="mt-2 text-xs space-y-1">
+                <div>
+                  Create a .env.local file with:
+                </div>
+                <code className="block bg-gray-100 p-1 rounded">
+                  NEXT_PUBLIC_OPENWEATHER_API_KEY=your_key_here
+                </code>
+                <div>
+                  Get a free key at:
+                  {' '}
+                  <a
+                    href="https://openweathermap.org/api"
+                    className="underline"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    openweathermap.org
+                  </a>
+                </div>
+              </div>
+            )}
           </div>
         )}
       </CardHeader>

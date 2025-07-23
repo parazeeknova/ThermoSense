@@ -195,7 +195,6 @@ function DashboardContent() {
       <SidebarNavigation
         currentPage={currentPage}
         onPageChange={handlePageChange}
-        unreadNotifications={3}
         isCollapsed={isCollapsed}
         onToggleCollapse={handleToggleCollapse}
         isMobile={isMobile}

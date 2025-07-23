@@ -1,17 +1,18 @@
 'use client'
 
-import { Activity, BarChart3, Battery, Bell, Brain, Calendar, ChevronLeft, ChevronRight, Gauge, Settings, Shield, Thermometer, TrendingUp, Wifi } from 'lucide-react'
+import { Activity, BarChart3, Battery, Brain, Calendar, ChevronLeft, ChevronRight, Gauge, Thermometer, TrendingUp, Wifi } from 'lucide-react'
 import React from 'react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Progress } from '@/components/ui/progress'
+import { useDeviceInfo } from '@/hooks/use-device-info'
+import { useSystemStatus } from '@/hooks/use-system-status'
 
 export type DashboardPage = 'monitoring' | 'analytics'
 
 interface SidebarNavigationProps {
   currentPage: DashboardPage
   onPageChange: (page: DashboardPage) => void
-  unreadNotifications?: number
   isCollapsed: boolean
   onToggleCollapse: () => void
   isMobile: boolean
@@ -42,16 +43,32 @@ const pageConfig = {
 export function SidebarNavigation({
   currentPage,
   onPageChange,
-  unreadNotifications = 3,
   isCollapsed,
   onToggleCollapse,
   isMobile,
   sidebarVisible,
 }: SidebarNavigationProps) {
+  const { data: deviceInfo } = useDeviceInfo()
+  const { health, connection, lastSync } = useSystemStatus()
+
   const handlePageChange = (page: DashboardPage) => {
     if (page !== currentPage) {
       onPageChange(page)
     }
+  }
+
+  const formatLastSync = (timestamp: string) => {
+    const now = new Date()
+    const lastSyncTime = new Date(timestamp)
+    const diffInSeconds = Math.floor((now.getTime() - lastSyncTime.getTime()) / 1000)
+
+    if (diffInSeconds < 60) {
+      return `${diffInSeconds}s ago`
+    }
+    if (diffInSeconds < 3600) {
+      return `${Math.floor(diffInSeconds / 60)}m ago`
+    }
+    return `${Math.floor(diffInSeconds / 3600)}h ago`
   }
 
   if (isMobile && !sidebarVisible) {
@@ -101,20 +118,48 @@ export function SidebarNavigation({
         </div>
 
         {!isCollapsed && (
-          <div className="flex items-center justify-between p-3 bg-emerald-50 rounded-lg border border-emerald-200 transition-opacity duration-300">
+          <div
+            className={`flex items-center justify-between p-3 rounded-lg border transition-opacity duration-300 ${
+              health?.isHealthy
+                ? 'bg-emerald-50 border-emerald-200'
+                : 'bg-red-50 border-red-200'
+            }`}
+          >
             <div className="flex items-center space-x-2 min-w-0">
-              <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse flex-shrink-0"></div>
-              <span className="text-sm font-medium text-emerald-800 truncate">System Active</span>
+              <div
+                className={`w-2 h-2 rounded-full animate-pulse flex-shrink-0 ${
+                  health?.isHealthy ? 'bg-emerald-500' : 'bg-red-500'
+                }`}
+              >
+              </div>
+              <span
+                className={`text-sm font-medium truncate ${
+                  health?.isHealthy ? 'text-emerald-800' : 'text-red-800'
+                }`}
+              >
+                {health?.isHealthy ? 'System Active' : 'System Error'}
+              </span>
             </div>
-            <Badge variant="outline" className="text-emerald-600 border-emerald-300 flex-shrink-0">
-              Live
+            <Badge
+              variant="outline"
+              className={`flex-shrink-0 ${
+                health?.isHealthy
+                  ? 'text-emerald-600 border-emerald-300'
+                  : 'text-red-600 border-red-300'
+              }`}
+            >
+              {health?.isHealthy ? 'Live' : 'Error'}
             </Badge>
           </div>
         )}
 
         {isCollapsed && (
           <div className="flex justify-center">
-            <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></div>
+            <div className={`w-2 h-2 rounded-full animate-pulse ${
+              health?.isHealthy ? 'bg-emerald-500' : 'bg-red-500'
+            }`}
+            >
+            </div>
           </div>
         )}
       </div>
@@ -170,18 +215,6 @@ export function SidebarNavigation({
                       </div>
                     </div>
                   )}
-                  {!isCollapsed && page === 'monitoring' && unreadNotifications > 0 && (
-                    <Badge className="bg-red-500 text-white text-xs flex-shrink-0">
-                      {unreadNotifications}
-                    </Badge>
-                  )}
-                  {isCollapsed && page === 'monitoring' && unreadNotifications > 0 && (
-                    <div className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full flex items-center justify-center">
-                      <span className="text-white text-xs font-bold" style={{ fontSize: '10px' }}>
-                        {unreadNotifications > 9 ? '9+' : unreadNotifications}
-                      </span>
-                    </div>
-                  )}
                 </div>
               </Button>
 
@@ -202,57 +235,97 @@ export function SidebarNavigation({
           </div>
 
           <div className="space-y-4">
-            <div className="flex items-center justify-between p-3 bg-blue-50 rounded-lg">
+            <div className={`flex items-center justify-between p-3 rounded-lg ${
+              connection?.isOnline
+                ? connection.status === 'stable'
+                  ? 'bg-blue-50'
+                  : 'bg-yellow-50'
+                : 'bg-red-50'
+            }`}
+            >
               <div className="flex items-center space-x-2 min-w-0">
-                <Wifi className="w-4 h-4 text-blue-600 flex-shrink-0" />
-                <span className="text-sm font-medium text-blue-800 truncate">Connection</span>
+                <Wifi className={`w-4 h-4 flex-shrink-0 ${
+                  connection?.isOnline
+                    ? connection.status === 'stable'
+                      ? 'text-blue-600'
+                      : 'text-yellow-600'
+                    : 'text-red-600'
+                }`}
+                />
+                <span className={`text-sm font-medium truncate ${
+                  connection?.isOnline
+                    ? connection.status === 'stable'
+                      ? 'text-blue-800'
+                      : 'text-yellow-800'
+                    : 'text-red-800'
+                }`}
+                >
+                  Connection
+                </span>
               </div>
-              <Badge variant="outline" className="text-blue-600 border-blue-300 text-xs flex-shrink-0">
-                Stable
+              <Badge
+                variant="outline"
+                className={`text-xs flex-shrink-0 ${
+                  connection?.isOnline
+                    ? connection.status === 'stable'
+                      ? 'text-blue-600 border-blue-300'
+                      : 'text-yellow-600 border-yellow-300'
+                    : 'text-red-600 border-red-300'
+                }`}
+              >
+                {connection?.isOnline
+                  ? connection.status === 'stable'
+                    ? 'Stable'
+                    : 'Slow'
+                  : 'Offline'}
               </Badge>
             </div>
 
-            <div className="p-3 bg-orange-50 rounded-lg">
-              <div className="flex items-center justify-between mb-2">
-                <div className="flex items-center space-x-2 min-w-0">
-                  <Battery className="w-4 h-4 text-orange-600 flex-shrink-0" />
-                  <span className="text-sm font-medium text-orange-800 truncate">Battery Health</span>
+            {deviceInfo?.battery && (
+              <div className="p-3 bg-orange-50 rounded-lg">
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center space-x-2 min-w-0">
+                    <Battery className="w-4 h-4 text-orange-600 flex-shrink-0" />
+                    <span className="text-sm font-medium text-orange-800 truncate">Battery Health</span>
+                  </div>
+                  <span className="text-xs text-orange-600 flex-shrink-0">
+                    {deviceInfo.battery.percent ? `${Math.round(deviceInfo.battery.percent)}%` : 'N/A'}
+                  </span>
                 </div>
-                <span className="text-xs text-orange-600 flex-shrink-0">78%</span>
+                <Progress value={deviceInfo.battery.percent || 0} className="h-2" />
               </div>
-              <Progress value={78} className="h-2" />
-            </div>
+            )}
 
-            <div className="p-3 bg-red-50 rounded-lg">
-              <div className="flex items-center justify-between mb-2">
-                <div className="flex items-center space-x-2 min-w-0">
-                  <Thermometer className="w-4 h-4 text-red-600 flex-shrink-0" />
-                  <span className="text-sm font-medium text-red-800 truncate">Temperature</span>
+            {deviceInfo?.temperature && (
+              <div className="p-3 bg-red-50 rounded-lg">
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center space-x-2 min-w-0">
+                    <Thermometer className="w-4 h-4 text-red-600 flex-shrink-0" />
+                    <span className="text-sm font-medium text-red-800 truncate">Temperature</span>
+                  </div>
+                  <span className="text-xs text-red-600 flex-shrink-0">
+                    {deviceInfo.temperature.cpu ? `${Math.round(deviceInfo.temperature.cpu)}°C` : 'N/A'}
+                  </span>
                 </div>
-                <span className="text-xs text-red-600 flex-shrink-0">42°C</span>
+                {deviceInfo.temperature.cpu && (
+                  <div className="flex items-center space-x-2">
+                    <TrendingUp className="w-3 h-3 text-red-500 flex-shrink-0" />
+                    <span className="text-xs text-red-600 truncate">
+                      {deviceInfo.temperature.cpu > 60 ? 'High' : 'Normal'}
+                    </span>
+                  </div>
+                )}
               </div>
-              <div className="flex items-center space-x-2">
-                <TrendingUp className="w-3 h-3 text-red-500 flex-shrink-0" />
-                <span className="text-xs text-red-600 truncate">Rising</span>
-              </div>
-            </div>
-
-            <div className="flex items-center justify-between p-3 bg-purple-50 rounded-lg">
-              <div className="flex items-center space-x-2 min-w-0">
-                <Shield className="w-4 h-4 text-purple-600 flex-shrink-0" />
-                <span className="text-sm font-medium text-purple-800 truncate">AI Protection</span>
-              </div>
-              <Badge variant="outline" className="text-purple-600 border-purple-300 text-xs flex-shrink-0">
-                Active
-              </Badge>
-            </div>
+            )}
 
             <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
               <div className="flex items-center space-x-2 min-w-0">
                 <Calendar className="w-4 h-4 text-gray-600 flex-shrink-0" />
                 <span className="text-sm font-medium text-gray-800 truncate">Last Sync</span>
               </div>
-              <span className="text-xs text-gray-600 flex-shrink-0">2m ago</span>
+              <span className="text-xs text-gray-600 flex-shrink-0">
+                {lastSync ? formatLastSync(lastSync) : 'Never'}
+              </span>
             </div>
           </div>
         </div>
@@ -264,31 +337,6 @@ export function SidebarNavigation({
             Quick Actions
           </div>
         )}
-
-        <Button
-          variant="outline"
-          size="sm"
-          className={`w-full ${isCollapsed ? 'px-2' : 'justify-start'}`}
-          title={isCollapsed ? 'Settings' : undefined}
-        >
-          <Settings className="w-4 h-4 mr-2 flex-shrink-0" />
-          {!isCollapsed && <span className="truncate">Settings</span>}
-        </Button>
-
-        <Button
-          variant="outline"
-          size="sm"
-          className={`w-full ${isCollapsed ? 'px-2 relative' : 'justify-start'}`}
-          title={isCollapsed ? 'Notifications' : undefined}
-        >
-          <Bell className="w-4 h-4 mr-2 flex-shrink-0" />
-          {!isCollapsed && <span className="truncate">Notifications</span>}
-          {unreadNotifications > 0 && (
-            <Badge className={`${isCollapsed ? 'absolute -top-1 -right-1' : 'ml-auto'} bg-red-500 text-white text-xs flex-shrink-0`}>
-              {unreadNotifications > 9 ? '9+' : unreadNotifications}
-            </Badge>
-          )}
-        </Button>
 
         <Button
           variant="outline"
