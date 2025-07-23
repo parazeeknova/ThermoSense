@@ -33,7 +33,6 @@ const bentoLayouts: Record<DashboardPage, Record<string, string>> = {
   },
 }
 
-// Card configuration with order and positioning
 const pageCards = {
   monitoring: [
     { id: 'device-temp' },
@@ -50,7 +49,7 @@ const pageCards = {
   ],
 }
 
-export default function BatteryTempDashboard() {
+export default function Dashboard() {
   const [currentDeviceTemp, setCurrentDeviceTemp] = useState(42)
   const [currentOutdoorTemp, setCurrentOutdoorTemp] = useState(38)
   const [batteryLevel, _setBatteryLevel] = useState(78)
@@ -58,10 +57,31 @@ export default function BatteryTempDashboard() {
   const [dragOverTarget, setDragOverTarget] = useState<string | null>(null)
   const [currentPage, setCurrentPage] = useState<DashboardPage>('monitoring')
   const [isCollapsed, setIsCollapsed] = useState(false)
+  const [isMobile, setIsMobile] = useState(false)
+  const [sidebarVisible, setSidebarVisible] = useState(false)
   const [monitoringCardOrder, setMonitoringCardOrder] = useState(pageCards.monitoring)
   const [analyticsCardOrder, setAnalyticsCardOrder] = useState(pageCards.analytics)
 
-  // Simulate real-time temperature updates
+  useEffect(() => {
+    const checkScreenSize = () => {
+      const mobile = window.innerWidth < 768
+      setIsMobile(mobile)
+
+      if (mobile) {
+        setIsCollapsed(true)
+        setSidebarVisible(false)
+      }
+      else {
+        setSidebarVisible(true)
+      }
+    }
+
+    checkScreenSize()
+    window.addEventListener('resize', checkScreenSize)
+
+    return () => window.removeEventListener('resize', checkScreenSize)
+  }, [])
+
   useEffect(() => {
     const interval = setInterval(() => {
       setCurrentDeviceTemp(prev => prev + (Math.random() - 0.5) * 2)
@@ -72,10 +92,8 @@ export default function BatteryTempDashboard() {
 
   const currentRisk = getRiskLevel(currentDeviceTemp, currentOutdoorTemp)
 
-  // Calculate risk value for heat risk meter (0-100 scale)
   const riskValue = Math.min(100, Math.max(0, ((currentDeviceTemp - currentOutdoorTemp) / 20) * 100))
 
-  // Determine trend based on temperature history (mock implementation)
   const trend: 'increasing' | 'decreasing' | 'stable'
     = currentDeviceTemp > 43
       ? 'increasing'
@@ -88,7 +106,18 @@ export default function BatteryTempDashboard() {
   }
 
   const handleToggleCollapse = () => {
-    setIsCollapsed(!isCollapsed)
+    if (isMobile) {
+      setSidebarVisible(!sidebarVisible)
+    }
+    else {
+      setIsCollapsed(!isCollapsed)
+    }
+  }
+
+  const handleMobileOverlayClick = () => {
+    if (isMobile) {
+      setSidebarVisible(false)
+    }
   }
 
   const handleDragStart = (id: string) => {
@@ -149,31 +178,53 @@ export default function BatteryTempDashboard() {
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
       <BlueprintGrid isDragging={!!draggedCard} />
 
-      {/* Sidebar */}
+      {isMobile && sidebarVisible && (
+        <div
+          className="fixed inset-0 bg-black/50 z-30 md:hidden"
+          onClick={handleMobileOverlayClick}
+        />
+      )}
+
       <SidebarNavigation
         currentPage={currentPage}
         onPageChange={handlePageChange}
         unreadNotifications={3}
         isCollapsed={isCollapsed}
         onToggleCollapse={handleToggleCollapse}
+        isMobile={isMobile}
+        sidebarVisible={sidebarVisible}
       />
 
-      {/* Main Content */}
       <div
         className={`flex flex-col overflow-hidden transition-all duration-300 ${
-          isCollapsed ? 'ml-16' : 'ml-80'
+          isMobile
+            ? 'ml-0'
+            : isCollapsed
+              ? 'ml-16'
+              : 'ml-80'
         }`}
       >
-        {/* Header */}
-        <div className="bg-white/95 backdrop-blur-sm border-b border-gray-200/50 shadow-sm sticky top-0 z-30">
-          <div className="max-w-none mx-auto px-6 py-4">
+        <div className="bg-white/95 backdrop-blur-sm border-b border-gray-200/50 shadow-sm sticky top-0 z-20">
+          <div className="max-w-none mx-auto px-3 sm:px-6 py-4">
             <div className="flex items-center justify-between">
+              {isMobile && (
+                <button
+                  type="button"
+                  onClick={handleToggleCollapse}
+                  className="p-2 rounded-lg bg-white border border-gray-200 shadow-sm hover:shadow-md transition-all duration-200 mr-3"
+                >
+                  <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                  </svg>
+                </button>
+              )}
+
               <div className="flex-1">
                 <PageTransition pageKey={currentPage}>
-                  <h1 className="text-2xl font-bold text-gray-900 mb-1">
+                  <h1 className="text-xl sm:text-2xl font-bold text-gray-900 mb-1">
                     {pageTitle}
                   </h1>
-                  <p className="text-sm text-gray-600">
+                  <p className="text-xs sm:text-sm text-gray-600">
                     {pageDescription}
                   </p>
                 </PageTransition>
@@ -182,11 +233,9 @@ export default function BatteryTempDashboard() {
           </div>
         </div>
 
-        {/* Page Content with Improved Bento Box Layout */}
-        <div className="flex-1 overflow-hidden p-3">
+        <div className="flex-1 overflow-hidden p-2 sm:p-3">
           <div className="max-w-none mx-auto h-full">
             <PageTransition pageKey={currentPage}>
-              {/* Desktop/Tablet Bento Grid */}
               <div
                 className="hidden lg:grid grid-cols-4 gap-3 w-full h-full"
                 style={{
@@ -248,7 +297,6 @@ export default function BatteryTempDashboard() {
                 ))}
               </div>
 
-              {/* Tablet Grid (2 columns) */}
               <div className="hidden md:grid lg:hidden grid-cols-2 gap-2 w-full h-full" style={{ gridAutoRows: 'minmax(140px, 1fr)' }}>
                 {currentCardOrder.map(cardItem => (
                   <div
@@ -303,8 +351,7 @@ export default function BatteryTempDashboard() {
                 ))}
               </div>
 
-              {/* Mobile Grid (1 column) */}
-              <div className="grid md:hidden grid-cols-1 gap-2 w-full h-full" style={{ gridAutoRows: 'minmax(140px, 1fr)' }}>
+              <div className="grid md:hidden grid-cols-1 gap-2 w-full h-full" style={{ gridAutoRows: 'minmax(120px, auto)' }}>
                 {currentCardOrder.map(cardItem => (
                   <div
                     key={cardItem.id}

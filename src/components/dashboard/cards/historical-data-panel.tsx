@@ -259,32 +259,35 @@ export function HistoricalDataPanel({
   return (
     <Card className="bg-white/95 backdrop-blur-sm border-gray-200/50 hover:bg-white transition-all duration-300 shadow-lg hover:shadow-xl h-full flex flex-col">
       <CardHeader className="pb-4">
-        <div className="flex items-center justify-between">
-          <CardTitle className="text-lg font-bold text-gray-900 flex items-center">
-            <History className="w-5 h-5 mr-2 text-blue-600" />
-            Comprehensive Analytics Dashboard
-            <Badge className="ml-2 bg-blue-100 text-blue-800">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <CardTitle className="text-base sm:text-lg font-bold text-gray-900 flex items-center">
+            <History className="w-4 h-4 sm:w-5 sm:h-5 mr-2 text-blue-600" />
+            <span className="hidden sm:inline">Comprehensive Analytics Dashboard</span>
+            <span className="sm:hidden">Analytics</span>
+            <Badge className="ml-2 bg-blue-100 text-blue-800 text-xs">
               {timeRange}
             </Badge>
           </CardTitle>
           <div className="flex items-center space-x-2">
-            <Button variant="outline" size="sm" onClick={exportData}>
-              <Download className="w-4 h-4 mr-1" />
-              Export CSV
+            <Button variant="outline" size="sm" onClick={exportData} className="text-xs sm:text-sm">
+              <Download className="w-3 h-3 sm:w-4 sm:h-4 mr-1" />
+              <span className="hidden sm:inline">Export CSV</span>
+              <span className="sm:hidden">Export</span>
             </Button>
             <Button
               variant="outline"
               size="sm"
               onClick={() => setShowRawData(!showRawData)}
+              className="text-xs sm:text-sm"
             >
               {showRawData ? 'Hide' : 'Show'}
-              {' '}
-              Raw Data
+              <span className="hidden sm:inline"> Raw Data</span>
             </Button>
           </div>
         </div>
-        <p className="text-sm text-gray-600">
-          Integrated temperature correlation, battery health impact, and performance analysis with
+        <p className="text-xs sm:text-sm text-gray-600">
+          <span className="hidden sm:inline">Integrated temperature correlation, battery health impact, and performance analysis with</span>
+          <span className="sm:hidden">Analysis with</span>
           {' '}
           {data.length}
           {' '}
@@ -294,30 +297,30 @@ export function HistoricalDataPanel({
 
       <CardContent className="flex-1 flex flex-col space-y-4">
         {/* Enhanced Statistics Grid */}
-        <div className="grid grid-cols-2 md:grid-cols-6 gap-3 p-4 bg-gradient-to-r from-gray-50 to-blue-50 rounded-lg">
+        <div className="grid grid-cols-3 sm:grid-cols-6 gap-2 sm:gap-3 p-3 sm:p-4 bg-gradient-to-r from-gray-50 to-blue-50 rounded-lg">
           <div className="text-center">
-            <div className="text-lg font-bold text-red-600">
+            <div className="text-sm sm:text-lg font-bold text-red-600">
               {avgBatteryTemp.toFixed(1)}
               °C
             </div>
             <div className="text-xs text-gray-600">Avg Battery</div>
           </div>
           <div className="text-center">
-            <div className="text-lg font-bold text-emerald-600">
+            <div className="text-sm sm:text-lg font-bold text-emerald-600">
               {avgAmbientTemp.toFixed(1)}
               °C
             </div>
             <div className="text-xs text-gray-600">Avg Ambient</div>
           </div>
           <div className="text-center">
-            <div className="text-lg font-bold text-blue-600">
+            <div className="text-sm sm:text-lg font-bold text-blue-600">
               {avgCpuLoad.toFixed(1)}
               %
             </div>
             <div className="text-xs text-gray-600">Avg CPU</div>
           </div>
           <div className="text-center">
-            <div className="text-lg font-bold text-orange-600">
+            <div className="text-sm sm:text-lg font-bold text-orange-600">
               +
               {maxTempDiff.toFixed(1)}
               °C
@@ -325,14 +328,14 @@ export function HistoricalDataPanel({
             <div className="text-xs text-gray-600">Max Diff</div>
           </div>
           <div className="text-center">
-            <div className="text-lg font-bold text-purple-600">
+            <div className="text-sm sm:text-lg font-bold text-purple-600">
               {avgChargeEfficiency.toFixed(1)}
               %
             </div>
             <div className="text-xs text-gray-600">Charge Eff</div>
           </div>
           <div className="text-center">
-            <div className="text-lg font-bold text-indigo-600">
+            <div className="text-sm sm:text-lg font-bold text-indigo-600">
               r =
               {' '}
               {correlationCoefficient}
@@ -347,33 +350,41 @@ export function HistoricalDataPanel({
             variant={selectedMetric === 'temperature' ? 'default' : 'outline'}
             size="sm"
             onClick={() => setSelectedMetric('temperature')}
+            className="text-xs sm:text-sm"
           >
-            <Thermometer className="w-4 h-4 mr-1" />
-            Temperature
+            <Thermometer className="w-3 h-3 sm:w-4 sm:h-4 mr-1" />
+            <span className="hidden sm:inline">Temperature</span>
+            <span className="sm:hidden">Temp</span>
           </Button>
           <Button
             variant={selectedMetric === 'correlation' ? 'default' : 'outline'}
             size="sm"
             onClick={() => setSelectedMetric('correlation')}
+            className="text-xs sm:text-sm"
           >
-            <Activity className="w-4 h-4 mr-1" />
-            Correlation
+            <Activity className="w-3 h-3 sm:w-4 sm:h-4 mr-1" />
+            <span className="hidden sm:inline">Correlation</span>
+            <span className="sm:hidden">Corr</span>
           </Button>
           <Button
             variant={selectedMetric === 'battery-health' ? 'default' : 'outline'}
             size="sm"
             onClick={() => setSelectedMetric('battery-health')}
+            className="text-xs sm:text-sm"
           >
-            <Zap className="w-4 h-4 mr-1" />
-            Battery Health
+            <Zap className="w-3 h-3 sm:w-4 sm:h-4 mr-1" />
+            <span className="hidden sm:inline">Battery Health</span>
+            <span className="sm:hidden">Health</span>
           </Button>
           <Button
             variant={selectedMetric === 'performance' ? 'default' : 'outline'}
             size="sm"
             onClick={() => setSelectedMetric('performance')}
+            className="text-xs sm:text-sm"
           >
-            <BarChart3 className="w-4 h-4 mr-1" />
-            Performance
+            <BarChart3 className="w-3 h-3 sm:w-4 sm:h-4 mr-1" />
+            <span className="hidden sm:inline">Performance</span>
+            <span className="sm:hidden">Perf</span>
           </Button>
         </div>
 
@@ -384,8 +395,9 @@ export function HistoricalDataPanel({
               variant={viewMode === 'line' ? 'default' : 'outline'}
               size="sm"
               onClick={() => setViewMode('line')}
+              className="text-xs sm:text-sm"
             >
-              <TrendingUp className="w-4 h-4 mr-1" />
+              <TrendingUp className="w-3 h-3 sm:w-4 sm:h-4 mr-1" />
               Line
             </Button>
             {selectedMetric === 'battery-health' && (
@@ -393,8 +405,9 @@ export function HistoricalDataPanel({
                 variant={viewMode === 'area' ? 'default' : 'outline'}
                 size="sm"
                 onClick={() => setViewMode('area')}
+                className="text-xs sm:text-sm"
               >
-                <Activity className="w-4 h-4 mr-1" />
+                <Activity className="w-3 h-3 sm:w-4 sm:h-4 mr-1" />
                 Area
               </Button>
             )}
@@ -403,8 +416,9 @@ export function HistoricalDataPanel({
                 variant={viewMode === 'scatter' ? 'default' : 'outline'}
                 size="sm"
                 onClick={() => setViewMode('scatter')}
+                className="text-xs sm:text-sm"
               >
-                <BarChart3 className="w-4 h-4 mr-1" />
+                <BarChart3 className="w-3 h-3 sm:w-4 sm:h-4 mr-1" />
                 Scatter
               </Button>
             )}
@@ -412,20 +426,20 @@ export function HistoricalDataPanel({
         )}
 
         {/* Main Chart */}
-        <div className="flex-1 border rounded-lg p-4 bg-white">
-          <ChartContainer config={chartConfig} className="h-[400px] w-full">
+        <div className="flex-1 border rounded-lg p-2 sm:p-4 bg-white">
+          <ChartContainer config={chartConfig} className="h-[300px] sm:h-[400px] w-full">
             {renderChart()}
           </ChartContainer>
         </div>
 
         {/* Analysis Insights */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
           <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
             <div className="flex items-center space-x-2 mb-2">
-              <TrendingDown className="w-4 h-4 text-red-600" />
-              <span className="font-medium text-red-800">Health Impact</span>
+              <TrendingDown className="w-3 h-3 sm:w-4 sm:h-4 text-red-600" />
+              <span className="font-medium text-red-800 text-xs sm:text-sm">Health Impact</span>
             </div>
-            <div className="text-sm text-red-700">
+            <div className="text-xs sm:text-sm text-red-700">
               Avg degradation:
               {' '}
               {avgHealthDegradation.toFixed(2)}
@@ -439,10 +453,10 @@ export function HistoricalDataPanel({
 
           <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
             <div className="flex items-center space-x-2 mb-2">
-              <Activity className="w-4 h-4 text-blue-600" />
-              <span className="font-medium text-blue-800">Correlation</span>
+              <Activity className="w-3 h-3 sm:w-4 sm:h-4 text-blue-600" />
+              <span className="font-medium text-blue-800 text-xs sm:text-sm">Correlation</span>
             </div>
-            <div className="text-sm text-blue-700">
+            <div className="text-xs sm:text-sm text-blue-700">
               Temperature correlation:
               {' '}
               {correlationCoefficient}
@@ -455,10 +469,10 @@ export function HistoricalDataPanel({
 
           <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-lg">
             <div className="flex items-center space-x-2 mb-2">
-              <Zap className="w-4 h-4 text-emerald-600" />
-              <span className="font-medium text-emerald-800">Efficiency</span>
+              <Zap className="w-3 h-3 sm:w-4 sm:h-4 text-emerald-600" />
+              <span className="font-medium text-emerald-800 text-xs sm:text-sm">Efficiency</span>
             </div>
-            <div className="text-sm text-emerald-700">
+            <div className="text-xs sm:text-sm text-emerald-700">
               Avg efficiency:
               {' '}
               {avgChargeEfficiency.toFixed(1)}
@@ -474,15 +488,15 @@ export function HistoricalDataPanel({
 
         {/* Device State Timeline */}
         <div className="space-y-2">
-          <h4 className="text-sm font-medium text-gray-700 flex items-center">
-            <Activity className="w-4 h-4 mr-1" />
+          <h4 className="text-xs sm:text-sm font-medium text-gray-700 flex items-center">
+            <Activity className="w-3 h-3 sm:w-4 sm:h-4 mr-1" />
             Device State Timeline
           </h4>
           <div className="flex space-x-1 overflow-x-auto">
             {data.map((reading, index) => (
               <div
                 key={index}
-                className={`w-3 h-6 rounded-sm ${getDeviceStateColor(reading.deviceState)} opacity-80 hover:opacity-100 transition-opacity`}
+                className={`w-2 sm:w-3 h-4 sm:h-6 rounded-sm ${getDeviceStateColor(reading.deviceState)} opacity-80 hover:opacity-100 transition-opacity flex-shrink-0`}
                 title={`${formatTime(reading.timestamp)}: ${reading.deviceState}`}
               />
             ))}
@@ -495,25 +509,29 @@ export function HistoricalDataPanel({
 
         {/* Location and Time Info */}
         {data[0]?.location && (
-          <div className="flex items-center space-x-4 p-3 bg-blue-50 rounded-lg">
-            <MapPin className="w-4 h-4 text-blue-600" />
-            <div>
-              <div className="text-sm font-medium text-gray-900">
-                Location:
-                {' '}
-                {data[0].location.city}
-              </div>
-              <div className="text-xs text-gray-600">
-                {data[0].location.lat.toFixed(4)}
-                ,
-                {data[0].location.lng.toFixed(4)}
+          <div className="flex flex-col sm:flex-row sm:items-center space-y-2 sm:space-y-0 sm:space-x-4 p-3 bg-blue-50 rounded-lg">
+            <div className="flex items-center space-x-2">
+              <MapPin className="w-3 h-3 sm:w-4 sm:h-4 text-blue-600" />
+              <div>
+                <div className="text-xs sm:text-sm font-medium text-gray-900">
+                  Location:
+                  {' '}
+                  {data[0].location.city}
+                </div>
+                <div className="text-xs text-gray-600">
+                  {data[0].location.lat.toFixed(4)}
+                  ,
+                  {data[0].location.lng.toFixed(4)}
+                </div>
               </div>
             </div>
-            <Clock className="w-4 h-4 text-blue-600" />
-            <div className="text-xs text-gray-600">
-              Updated:
-              {' '}
-              {formatTime(data[data.length - 1]?.timestamp || '')}
+            <div className="flex items-center space-x-2">
+              <Clock className="w-3 h-3 sm:w-4 sm:h-4 text-blue-600" />
+              <div className="text-xs text-gray-600">
+                Updated:
+                {' '}
+                {formatTime(data[data.length - 1]?.timestamp || '')}
+              </div>
             </div>
           </div>
         )}
@@ -524,25 +542,25 @@ export function HistoricalDataPanel({
             <table className="w-full text-xs">
               <thead>
                 <tr className="border-b border-gray-200">
-                  <th className="text-left p-2">Time</th>
-                  <th className="text-left p-2">Battery °C</th>
-                  <th className="text-left p-2">Ambient °C</th>
-                  <th className="text-left p-2">CPU %</th>
-                  <th className="text-left p-2">Health %</th>
-                  <th className="text-left p-2">Efficiency %</th>
-                  <th className="text-left p-2">State</th>
+                  <th className="text-left p-1 sm:p-2">Time</th>
+                  <th className="text-left p-1 sm:p-2">Battery °C</th>
+                  <th className="text-left p-1 sm:p-2">Ambient °C</th>
+                  <th className="text-left p-1 sm:p-2 hidden sm:table-cell">CPU %</th>
+                  <th className="text-left p-1 sm:p-2 hidden sm:table-cell">Health %</th>
+                  <th className="text-left p-1 sm:p-2 hidden sm:table-cell">Efficiency %</th>
+                  <th className="text-left p-1 sm:p-2">State</th>
                 </tr>
               </thead>
               <tbody>
                 {data.slice(-10).map((reading, index) => (
                   <tr key={index} className="border-b border-gray-100 hover:bg-gray-50">
-                    <td className="p-2">{formatTime(reading.timestamp)}</td>
-                    <td className="p-2 text-red-600">{reading.batteryTemp.toFixed(1)}</td>
-                    <td className="p-2 text-emerald-600">{reading.ambientTemp.toFixed(1)}</td>
-                    <td className="p-2 text-blue-600">{reading.cpuLoad.toFixed(1)}</td>
-                    <td className="p-2 text-purple-600">{((reading as any).healthDegradation || 0).toFixed(2)}</td>
-                    <td className="p-2 text-indigo-600">{((reading as any).chargeEfficiency || 90).toFixed(1)}</td>
-                    <td className="p-2">
+                    <td className="p-1 sm:p-2">{formatTime(reading.timestamp)}</td>
+                    <td className="p-1 sm:p-2 text-red-600">{reading.batteryTemp.toFixed(1)}</td>
+                    <td className="p-1 sm:p-2 text-emerald-600">{reading.ambientTemp.toFixed(1)}</td>
+                    <td className="p-1 sm:p-2 text-blue-600 hidden sm:table-cell">{reading.cpuLoad.toFixed(1)}</td>
+                    <td className="p-1 sm:p-2 text-purple-600 hidden sm:table-cell">{((reading as any).healthDegradation || 0).toFixed(2)}</td>
+                    <td className="p-1 sm:p-2 text-indigo-600 hidden sm:table-cell">{((reading as any).chargeEfficiency || 90).toFixed(1)}</td>
+                    <td className="p-1 sm:p-2">
                       <Badge
                         variant="outline"
                         className={`text-xs ${getDeviceStateColor(reading.deviceState)} text-white border-none`}

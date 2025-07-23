@@ -84,57 +84,65 @@ export function DeviceConfigPanel({ devices = mockDevices }: DeviceConfigPanelPr
   return (
     <Card className="bg-white/95 backdrop-blur-sm border-gray-200/50 hover:bg-white transition-all duration-300 shadow-lg hover:shadow-xl">
       <CardHeader className="pb-4">
-        <CardTitle className="text-lg font-bold text-gray-900 flex items-center justify-between">
+        <CardTitle className="text-base sm:text-lg font-bold text-gray-900 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div className="flex items-center">
-            <Settings className="w-5 h-5 mr-2 text-blue-600" />
-            Device Configuration
+            <Settings className="w-4 h-4 sm:w-5 sm:h-5 mr-2 text-blue-600" />
+            <span className="hidden sm:inline">Device Configuration</span>
+            <span className="sm:hidden">Device Config</span>
           </div>
           <Button
             variant="outline"
             size="sm"
             onClick={() => setShowAddDevice(true)}
-            className="text-emerald-600 border-emerald-200 hover:bg-emerald-50"
+            className="text-emerald-600 border-emerald-200 hover:bg-emerald-50 text-xs sm:text-sm"
           >
-            <Plus className="w-4 h-4 mr-1" />
-            Add Device
+            <Plus className="w-3 h-3 sm:w-4 sm:h-4 mr-1" />
+            <span className="hidden sm:inline">Add Device</span>
+            <span className="sm:hidden">Add</span>
           </Button>
         </CardTitle>
-        <p className="text-sm text-gray-600">Configure sensors, thresholds, and notifications for your devices</p>
+        <p className="text-xs sm:text-sm text-gray-600">
+          <span className="hidden sm:inline">Configure sensors, thresholds, and notifications for your devices</span>
+          <span className="sm:hidden">Configure device sensors & settings</span>
+        </p>
       </CardHeader>
 
-      <CardContent className="space-y-6">
+      <CardContent className="space-y-4 sm:space-y-6">
         <div className="space-y-2">
-          <h4 className="text-sm font-medium text-gray-700">
+          <h4 className="text-xs sm:text-sm font-medium text-gray-700">
             Connected Devices (
             {deviceList.length}
             )
           </h4>
-          <div className="space-y-2 max-h-32 overflow-y-auto">
+          <div className="space-y-2 max-h-32 sm:max-h-40 overflow-y-auto">
             {deviceList.map((device) => {
               const connectionStatus = getConnectionStatus(device)
               return (
                 <div
                   key={device.id}
-                  className={`flex items-center justify-between p-3 border rounded-lg cursor-pointer transition-all ${
+                  className={`flex items-center justify-between p-2 sm:p-3 border rounded-lg cursor-pointer transition-all ${
                     selectedDevice === device.id
                       ? 'border-blue-300 bg-blue-50'
                       : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
                   }`}
                   onClick={() => setSelectedDevice(device.id)}
                 >
-                  <div className="flex items-center space-x-3">
+                  <div className="flex items-center space-x-2 sm:space-x-3 min-w-0">
                     <div className="flex items-center space-x-2">
                       {getDeviceIcon(device.type)}
-                      <span className="font-medium text-gray-900">{device.name}</span>
+                      <span className="font-medium text-gray-900 text-sm truncate">{device.name}</span>
                     </div>
                     <Badge
                       variant="outline"
-                      className={`text-xs ${connectionStatus.color} border-current`}
+                      className={`text-xs ${connectionStatus.color} border-current flex-shrink-0`}
                     >
-                      {connectionStatus.label}
+                      <span className="hidden sm:inline">{connectionStatus.label}</span>
+                      <span className="sm:hidden">
+                        {connectionStatus.label === 'Connected' ? 'On' : connectionStatus.label === 'Disconnected' ? 'Off' : 'Dis'}
+                      </span>
                     </Badge>
                   </div>
-                  <div className="flex items-center space-x-2">
+                  <div className="flex items-center space-x-2 flex-shrink-0">
                     {device.isActive && (
                       <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></div>
                     )}
@@ -157,14 +165,14 @@ export function DeviceConfigPanel({ devices = mockDevices }: DeviceConfigPanelPr
         </div>
 
         {selectedDeviceData && (
-          <div className="space-y-4 border-t pt-4">
-            <h4 className="text-sm font-medium text-gray-700">
+          <div className="space-y-3 sm:space-y-4 border-t pt-4">
+            <h4 className="text-xs sm:text-sm font-medium text-gray-700">
               Configuration for
               {' '}
               {selectedDeviceData.name}
             </h4>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
               <div className="space-y-2">
                 <label className="text-xs font-medium text-gray-600">Device Status</label>
                 <div className="flex items-center space-x-2">
@@ -172,7 +180,7 @@ export function DeviceConfigPanel({ devices = mockDevices }: DeviceConfigPanelPr
                     variant={selectedDeviceData.isActive ? 'default' : 'outline'}
                     size="sm"
                     onClick={() => updateDevice(selectedDeviceData.id, { isActive: !selectedDeviceData.isActive })}
-                    className={selectedDeviceData.isActive ? 'bg-emerald-600 hover:bg-emerald-700' : ''}
+                    className={`${selectedDeviceData.isActive ? 'bg-emerald-600 hover:bg-emerald-700' : ''} text-xs sm:text-sm`}
                   >
                     <Power className="w-3 h-3 mr-1" />
                     {selectedDeviceData.isActive ? 'Active' : 'Inactive'}
@@ -187,7 +195,7 @@ export function DeviceConfigPanel({ devices = mockDevices }: DeviceConfigPanelPr
                     variant={selectedDeviceData.sensorEnabled ? 'default' : 'outline'}
                     size="sm"
                     onClick={() => updateDevice(selectedDeviceData.id, { sensorEnabled: !selectedDeviceData.sensorEnabled })}
-                    className={selectedDeviceData.sensorEnabled ? 'bg-blue-600 hover:bg-blue-700' : ''}
+                    className={`${selectedDeviceData.sensorEnabled ? 'bg-blue-600 hover:bg-blue-700' : ''} text-xs sm:text-sm`}
                   >
                     <Thermometer className="w-3 h-3 mr-1" />
                     {selectedDeviceData.sensorEnabled ? 'Enabled' : 'Disabled'}
@@ -198,15 +206,15 @@ export function DeviceConfigPanel({ devices = mockDevices }: DeviceConfigPanelPr
 
             <div className="space-y-3">
               <label className="text-xs font-medium text-gray-600">Temperature Thresholds (°C)</label>
-              <div className="space-y-3">
-                <div className="flex items-center space-x-4">
+              <div className="space-y-2 sm:space-y-3">
+                <div className="flex items-center space-x-2 sm:space-x-4">
                   <div className="flex items-center space-x-2">
                     <div className="w-3 h-3 bg-emerald-500 rounded-full"></div>
-                    <span className="text-sm">Safe</span>
+                    <span className="text-xs sm:text-sm">Safe</span>
                   </div>
                   <div className="flex-1">
                     <div className="flex items-center space-x-2">
-                      <span className="text-sm font-mono">
+                      <span className="text-xs sm:text-sm font-mono">
                         ≤
                         {selectedDeviceData.thresholds.safe}
                         °C
@@ -222,14 +230,14 @@ export function DeviceConfigPanel({ devices = mockDevices }: DeviceConfigPanelPr
                   </div>
                 </div>
 
-                <div className="flex items-center space-x-4">
+                <div className="flex items-center space-x-2 sm:space-x-4">
                   <div className="flex items-center space-x-2">
                     <div className="w-3 h-3 bg-amber-500 rounded-full"></div>
-                    <span className="text-sm">Caution</span>
+                    <span className="text-xs sm:text-sm">Caution</span>
                   </div>
                   <div className="flex-1">
                     <div className="flex items-center space-x-2">
-                      <span className="text-sm font-mono">
+                      <span className="text-xs sm:text-sm font-mono">
                         {selectedDeviceData.thresholds.safe + 1}
                         -
                         {selectedDeviceData.thresholds.caution}
@@ -246,14 +254,14 @@ export function DeviceConfigPanel({ devices = mockDevices }: DeviceConfigPanelPr
                   </div>
                 </div>
 
-                <div className="flex items-center space-x-4">
+                <div className="flex items-center space-x-2 sm:space-x-4">
                   <div className="flex items-center space-x-2">
                     <div className="w-3 h-3 bg-red-500 rounded-full"></div>
-                    <span className="text-sm">Critical</span>
+                    <span className="text-xs sm:text-sm">Critical</span>
                   </div>
                   <div className="flex-1">
                     <div className="flex items-center space-x-2">
-                      <span className="text-sm font-mono">
+                      <span className="text-xs sm:text-sm font-mono">
                         ≥
                         {selectedDeviceData.thresholds.critical}
                         °C
@@ -280,6 +288,7 @@ export function DeviceConfigPanel({ devices = mockDevices }: DeviceConfigPanelPr
                   onClick={() => updateDevice(selectedDeviceData.id, {
                     notifications: { ...selectedDeviceData.notifications, enabled: !selectedDeviceData.notifications.enabled },
                   })}
+                  className="text-xs"
                 >
                   <Bell className="w-3 h-3 mr-1" />
                   Alerts
@@ -292,6 +301,7 @@ export function DeviceConfigPanel({ devices = mockDevices }: DeviceConfigPanelPr
                     notifications: { ...selectedDeviceData.notifications, sound: !selectedDeviceData.notifications.sound },
                   })}
                   disabled={!selectedDeviceData.notifications.enabled}
+                  className="text-xs"
                 >
                   <Wifi className="w-3 h-3 mr-1" />
                   Sound
@@ -304,6 +314,7 @@ export function DeviceConfigPanel({ devices = mockDevices }: DeviceConfigPanelPr
                     notifications: { ...selectedDeviceData.notifications, push: !selectedDeviceData.notifications.push },
                   })}
                   disabled={!selectedDeviceData.notifications.enabled}
+                  className="text-xs"
                 >
                   <Bluetooth className="w-3 h-3 mr-1" />
                   Push
@@ -314,7 +325,7 @@ export function DeviceConfigPanel({ devices = mockDevices }: DeviceConfigPanelPr
             <div className="p-3 bg-gray-50 rounded-lg">
               <div className="flex items-center justify-between mb-2">
                 <span className="text-xs font-medium text-gray-600">Connection Health</span>
-                <Badge variant="outline" className="text-emerald-600 border-emerald-200">
+                <Badge variant="outline" className="text-emerald-600 border-emerald-200 text-xs">
                   98% Uptime
                 </Badge>
               </div>
@@ -330,7 +341,7 @@ export function DeviceConfigPanel({ devices = mockDevices }: DeviceConfigPanelPr
         {/* System Overview Section */}
         <div className="space-y-3 border-t pt-4">
           <div className="flex items-center justify-between">
-            <h4 className="text-sm font-medium text-gray-700">System Overview</h4>
+            <h4 className="text-xs sm:text-sm font-medium text-gray-700">System Overview</h4>
             <Badge className="bg-blue-100 text-blue-800 text-xs">
               {deviceList.filter(d => d.isActive).length}
               {' '}
@@ -338,13 +349,16 @@ export function DeviceConfigPanel({ devices = mockDevices }: DeviceConfigPanelPr
             </Badge>
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div className="p-3 bg-gradient-to-r from-emerald-50 to-emerald-100 rounded-lg">
               <div className="flex items-center space-x-2 mb-1">
-                <Thermometer className="w-4 h-4 text-emerald-600" />
-                <span className="text-xs font-medium text-emerald-800">Temperature Monitoring</span>
+                <Thermometer className="w-3 h-3 sm:w-4 sm:h-4 text-emerald-600" />
+                <span className="text-xs font-medium text-emerald-800">
+                  <span className="hidden sm:inline">Temperature Monitoring</span>
+                  <span className="sm:hidden">Temp Monitor</span>
+                </span>
               </div>
-              <div className="text-lg font-bold text-emerald-700">
+              <div className="text-base sm:text-lg font-bold text-emerald-700">
                 {deviceList.filter(d => d.sensorEnabled).length}
                 /
                 {deviceList.length}
@@ -354,10 +368,10 @@ export function DeviceConfigPanel({ devices = mockDevices }: DeviceConfigPanelPr
 
             <div className="p-3 bg-gradient-to-r from-blue-50 to-blue-100 rounded-lg">
               <div className="flex items-center space-x-2 mb-1">
-                <Bell className="w-4 h-4 text-blue-600" />
+                <Bell className="w-3 h-3 sm:w-4 sm:h-4 text-blue-600" />
                 <span className="text-xs font-medium text-blue-800">Notifications</span>
               </div>
-              <div className="text-lg font-bold text-blue-700">
+              <div className="text-base sm:text-lg font-bold text-blue-700">
                 {deviceList.filter(d => d.notifications.enabled).length}
                 /
                 {deviceList.length}
@@ -368,17 +382,17 @@ export function DeviceConfigPanel({ devices = mockDevices }: DeviceConfigPanelPr
         </div>
 
         <div className="space-y-3 border-t pt-4">
-          <h4 className="text-sm font-medium text-gray-700 flex items-center">
-            <Database className="w-4 h-4 mr-2 text-purple-600" />
+          <h4 className="text-xs sm:text-sm font-medium text-gray-700 flex items-center">
+            <Database className="w-3 h-3 sm:w-4 sm:h-4 mr-2 text-purple-600" />
             Data Synchronization
           </h4>
 
           <div className="grid grid-cols-2 gap-2">
-            <Button variant="outline" size="sm" className="flex items-center justify-center">
+            <Button variant="outline" size="sm" className="flex items-center justify-center text-xs sm:text-sm">
               <Upload className="w-3 h-3 mr-1" />
               <span className="text-xs">Sync Now</span>
             </Button>
-            <Button variant="outline" size="sm" className="flex items-center justify-center">
+            <Button variant="outline" size="sm" className="flex items-center justify-center text-xs sm:text-sm">
               <Download className="w-3 h-3 mr-1" />
               <span className="text-xs">Export Data</span>
             </Button>
@@ -406,17 +420,17 @@ export function DeviceConfigPanel({ devices = mockDevices }: DeviceConfigPanelPr
         </div>
 
         {showAddDevice && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-white rounded-lg p-6 w-96 max-w-90vw">
-              <h3 className="text-lg font-bold mb-4">Add New Device</h3>
-              <p className="text-sm text-gray-600 mb-4">
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-lg p-4 sm:p-6 w-full max-w-sm sm:max-w-md">
+              <h3 className="text-base sm:text-lg font-bold mb-4">Add New Device</h3>
+              <p className="text-xs sm:text-sm text-gray-600 mb-4">
                 Connect a new device to monitor its battery temperature and performance.
               </p>
               <div className="flex space-x-2">
-                <Button onClick={addDevice} className="flex-1">
+                <Button onClick={addDevice} className="flex-1 text-xs sm:text-sm">
                   Add Device
                 </Button>
-                <Button variant="outline" onClick={() => setShowAddDevice(false)}>
+                <Button variant="outline" onClick={() => setShowAddDevice(false)} className="text-xs sm:text-sm">
                   Cancel
                 </Button>
               </div>

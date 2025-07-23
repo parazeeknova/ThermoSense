@@ -14,6 +14,8 @@ interface SidebarNavigationProps {
   unreadNotifications?: number
   isCollapsed: boolean
   onToggleCollapse: () => void
+  isMobile: boolean
+  sidebarVisible: boolean
 }
 
 const pageConfig = {
@@ -43,6 +45,8 @@ export function SidebarNavigation({
   unreadNotifications = 3,
   isCollapsed,
   onToggleCollapse,
+  isMobile,
+  sidebarVisible,
 }: SidebarNavigationProps) {
   const handlePageChange = (page: DashboardPage) => {
     if (page !== currentPage) {
@@ -50,26 +54,38 @@ export function SidebarNavigation({
     }
   }
 
+  if (isMobile && !sidebarVisible) {
+    return null
+  }
+
   return (
     <div
       className={`${
         isCollapsed ? 'w-16' : 'w-80'
-      } bg-white/95 backdrop-blur-sm border-r border-gray-200/50 shadow-lg flex flex-col h-screen transition-all duration-300 ease-in-out fixed left-0 top-0 z-40`}
+      } bg-white/95 backdrop-blur-sm border-r border-gray-200/50 shadow-lg flex flex-col h-screen transition-all duration-300 ease-in-out ${
+        isMobile
+          ? `fixed left-0 top-0 z-40 transform transition-transform duration-300 ease-in-out ${
+            sidebarVisible ? 'translate-x-0' : '-translate-x-full'
+          }`
+          : 'fixed left-0 top-0 z-40'
+      }`}
     >
-      <Button
-        variant="ghost"
-        size="sm"
-        onClick={onToggleCollapse}
-        className="absolute -right-3 top-6 z-50 w-6 h-6 rounded-full bg-white border border-gray-200 shadow-lg hover:shadow-xl transition-all duration-200 p-0"
-      >
-        {isCollapsed
-          ? (
-              <ChevronRight className="w-3 h-3 text-gray-600" />
-            )
-          : (
-              <ChevronLeft className="w-3 h-3 text-gray-600" />
-            )}
-      </Button>
+      {!isMobile && (
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={onToggleCollapse}
+          className="absolute -right-3 top-6 z-50 w-6 h-6 rounded-full bg-white border border-gray-200 shadow-lg hover:shadow-xl transition-all duration-200 p-0"
+        >
+          {isCollapsed
+            ? (
+                <ChevronRight className="w-3 h-3 text-gray-600" />
+              )
+            : (
+                <ChevronLeft className="w-3 h-3 text-gray-600" />
+              )}
+        </Button>
+      )}
 
       <div className={`${isCollapsed ? 'p-3' : 'p-6'} border-b border-gray-200/50 transition-all duration-300`}>
         <div className={`flex items-center ${isCollapsed ? 'justify-center' : 'space-x-3'} mb-4`}>
@@ -169,7 +185,6 @@ export function SidebarNavigation({
                 </div>
               </Button>
 
-              {/* Active indicator */}
               {isActive && (
                 <div
                   className={`absolute right-0 top-1/2 transform -translate-y-1/2 w-1 h-8 bg-gradient-to-b ${config.gradient} rounded-l-full transition-all duration-300`}

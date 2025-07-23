@@ -1,5 +1,5 @@
-import BatteryTempDashboard from '@/components/dashboard/battery-temp-dashboard'
+import Dashboard from '@/components/dashboard/dashboard'
 
 export default function Home() {
-  return <BatteryTempDashboard />
+  return <Dashboard />
 }
