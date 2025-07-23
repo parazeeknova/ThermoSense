@@ -4,16 +4,10 @@ import * as si from 'systeminformation'
 
 export async function GET(_request: NextRequest) {
   try {
-    // Get CPU temperature
     const cpuTemp = await si.cpuTemperature()
-
-    // Get battery information
     const battery = await si.battery()
-
-    // Get CPU information for context
     const cpuInfo = await si.cpu()
 
-    // Get current load for temperature context
     const currentLoad = await si.currentLoad()
 
     const response = {

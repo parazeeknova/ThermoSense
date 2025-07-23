@@ -1,12 +1,5 @@
-import { useQuery } from '@tanstack/react-query'
-
-interface DeviceTemperature {
-  cpu: number | null
-  cores: number[]
-  max: number | null
-  socket: number[]
-  chipset: number | null
-}
+import { useQuery, useQueryClient } from '@tanstack/react-query'
+import { useEffect } from 'react'
 
 interface DeviceBattery {
   hasBattery: boolean
@@ -35,6 +28,14 @@ interface DeviceCpu {
   processors: number
 }
 
+interface DeviceInfo {
+  temperature: DeviceTemperature
+  battery: DeviceBattery
+  cpu: DeviceCpu
+  load: DeviceLoad
+  timestamp: string
+}
+
 interface DeviceLoad {
   avgLoad: number
   currentLoad: number
@@ -42,12 +43,17 @@ interface DeviceLoad {
   currentLoadSystem: number
 }
 
-interface DeviceInfo {
-  temperature: DeviceTemperature
-  battery: DeviceBattery
-  cpu: DeviceCpu
-  load: DeviceLoad
-  timestamp: string
+interface DeviceTemperature {
+  cpu: number | null
+  cores: number[]
+  max: number | null
+  socket: number[]
+  chipset: number | null
+}
+
+export const deviceInfoKeys = {
+  all: ['device-info'] as const,
+  current: () => [...deviceInfoKeys.all, 'current'] as const,
 }
 
 async function fetchDeviceInfo(): Promise<DeviceInfo> {
@@ -59,8 +65,10 @@ async function fetchDeviceInfo(): Promise<DeviceInfo> {
 }
 
 export function useDeviceInfo() {
-  return useQuery({
-    queryKey: ['device-info'],
+  const queryClient = useQueryClient()
+
+  const query = useQuery({
+    queryKey: deviceInfoKeys.current(),
     queryFn: fetchDeviceInfo,
     refetchInterval: 2000, // Refresh every 2 seconds
     staleTime: 1000, // Consider data stale after 1 second
@@ -68,6 +76,36 @@ export function useDeviceInfo() {
     retry: 3,
     retryDelay: attemptIndex => Math.min(1000 * 2 ** attemptIndex, 30000),
   })
+
+  // Use effect to handle cache coordination when data changes
+  useEffect(() => {
+    if (query.data?.timestamp) {
+      queryClient.invalidateQueries({
+        queryKey: ['historical-data'],
+        exact: false,
+      })
+    }
+  }, [query.data?.timestamp, queryClient])
+
+  return query
+}
+
+// Hook to coordinate device info with other data sources
+export function useDeviceInfoSync() {
+  const queryClient = useQueryClient()
+
+  const refreshDeviceInfo = () => {
+    queryClient.invalidateQueries({ queryKey: deviceInfoKeys.all })
+  }
+
+  const getLatestDeviceInfo = () => {
+    return queryClient.getQueryData(deviceInfoKeys.current())
+  }
+
+  return {
+    refreshDeviceInfo,
+    getLatestDeviceInfo,
+  }
 }
 
 export type { DeviceBattery, DeviceCpu, DeviceInfo, DeviceLoad, DeviceTemperature }

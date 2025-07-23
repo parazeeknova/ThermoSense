@@ -82,6 +82,10 @@ export async function GET(request: NextRequest) {
       condition: conditionMap[weatherData.weather[0].main] || 'Clear',
       uvIndex: Math.round(uvIndex * 10) / 10,
       location: `${weatherData.name}, ${weatherData.sys.country}`,
+      coordinates: {
+        lat: weatherData.coord.lat,
+        lng: weatherData.coord.lon,
+      },
       lastUpdated: new Date().toISOString(),
     }
 

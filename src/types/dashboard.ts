@@ -59,6 +59,10 @@ export interface WeatherData {
   condition: string
   uvIndex: number
   location: string
+  coordinates?: {
+    lat: number
+    lng: number
+  }
   lastUpdated: string
 }
 
