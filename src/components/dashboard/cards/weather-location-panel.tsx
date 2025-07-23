@@ -1,13 +1,12 @@
 'use client'
 
-import type { WeatherData } from '@/types/dashboard'
 import { AlertCircle, Cloud, CloudRain, Droplets, Eye, MapPin, Navigation, RefreshCw, Sun, Thermometer, Wind } from 'lucide-react'
-import React, { useEffect, useState } from 'react'
+import React, { useState } from 'react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Progress } from '@/components/ui/progress'
-import { WeatherService } from '@/lib/weather-service'
+import { useWeather } from '@/hooks/use-weather'
 
 const weatherConditions = {
   'Clear': { icon: <Sun className="w-6 h-6 text-yellow-500" />, color: 'text-yellow-600', bg: 'bg-yellow-50' },
@@ -19,84 +18,52 @@ const weatherConditions = {
 interface WeatherLocationPanelProps {
   onRefresh?: () => void
   onLocationChange?: (location: string) => void
-  defaultLocation?: string
 }
 
 export function WeatherLocationPanel({
   onRefresh,
   onLocationChange,
-  defaultLocation = 'Bhopal',
 }: WeatherLocationPanelProps) {
-  const [weatherData, setWeatherData] = useState<WeatherData | null>(null)
-  const [isLoading, setIsLoading] = useState(true)
-  const [isRefreshing, setIsRefreshing] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+  const {
+    weatherData,
+    isLoading,
+    isUpdatingLocation,
+    isAutoLocating,
+    error,
+    updateLocation,
+    autoLocate,
+    refreshWeather,
+  } = useWeather()
+
   const [showLocationInput, setShowLocationInput] = useState(false)
   const [newLocation, setNewLocation] = useState('')
-  const [currentLocation, setCurrentLocation] = useState(defaultLocation)
-
-  const fetchWeatherData = async (location: string) => {
-    try {
-      setError(null)
-      const data = await WeatherService.getCurrentWeather(location)
-      setWeatherData(data)
-      setCurrentLocation(location)
-    }
-    catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to fetch weather data'
-      setError(errorMessage)
-      console.error('Weather fetch error:', err)
-    }
-  }
-
-  const fetchWeatherByLocation = async () => {
-    try {
-      setError(null)
-      const coords = await WeatherService.getCurrentLocation()
-      const data = await WeatherService.getWeatherByCoordinates(coords.lat, coords.lon)
-      setWeatherData(data)
-      setCurrentLocation(data.location)
-    }
-    catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to get current location'
-      setError(errorMessage)
-      // Fallback to default location
-      await fetchWeatherData(defaultLocation)
-    }
-  }
-
-  useEffect(() => {
-    const loadInitialWeather = async () => {
-      setIsLoading(true)
-      await fetchWeatherData(currentLocation)
-      setIsLoading(false)
-    }
-    loadInitialWeather()
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
 
   const handleRefresh = async () => {
-    setIsRefreshing(true)
-    await fetchWeatherData(currentLocation)
+    refreshWeather()
     onRefresh?.()
-    setIsRefreshing(false)
   }
 
   const handleLocationUpdate = async () => {
     if (newLocation.trim()) {
-      setIsLoading(true)
-      await fetchWeatherData(newLocation.trim())
-      onLocationChange?.(newLocation.trim())
-      setShowLocationInput(false)
-      setNewLocation('')
-      setIsLoading(false)
+      try {
+        await updateLocation(newLocation.trim())
+        onLocationChange?.(newLocation.trim())
+        setShowLocationInput(false)
+        setNewLocation('')
+      }
+      catch (err) {
+        console.error('Failed to update location:', err)
+      }
     }
   }
 
   const handleAutoLocate = async () => {
-    setIsLoading(true)
-    await fetchWeatherByLocation()
-    setIsLoading(false)
+    try {
+      await autoLocate()
+    }
+    catch (err) {
+      console.error('Failed to auto-locate:', err)
+    }
   }
 
   const getUVIndexColor = (uvIndex: number) => {
@@ -166,9 +133,11 @@ export function WeatherLocationPanel({
             <AlertCircle className="w-6 h-6 mr-2" />
             <div className="text-center">
               <div className="font-medium">Weather data unavailable</div>
-              <div className="text-sm text-gray-600 mt-1">{error}</div>
+              <div className="text-sm text-gray-600 mt-1">
+                {error instanceof Error ? error.message : 'Unknown error'}
+              </div>
               <Button
-                onClick={() => fetchWeatherData(currentLocation)}
+                onClick={refreshWeather}
                 className="mt-4"
                 variant="outline"
               >
@@ -205,6 +174,7 @@ export function WeatherLocationPanel({
               size="sm"
               onClick={() => setShowLocationInput(!showLocationInput)}
               className="text-blue-600 border-blue-200 hover:bg-blue-50"
+              disabled={isUpdatingLocation}
             >
               <Navigation className="w-4 h-4 mr-1" />
               Change
@@ -213,10 +183,10 @@ export function WeatherLocationPanel({
               variant="outline"
               size="sm"
               onClick={handleRefresh}
-              disabled={isRefreshing}
+              disabled={isLoading}
               className="text-emerald-600 border-emerald-200 hover:bg-emerald-50"
             >
-              <RefreshCw className={`w-4 h-4 mr-1 ${isRefreshing ? 'animate-spin' : ''}`} />
+              <RefreshCw className={`w-4 h-4 mr-1 ${isLoading ? 'animate-spin' : ''}`} />
               Refresh
             </Button>
           </div>
@@ -225,7 +195,7 @@ export function WeatherLocationPanel({
         {error && (
           <div className="mt-2 p-2 bg-yellow-50 border border-yellow-200 rounded text-yellow-800 text-sm">
             <AlertCircle className="w-4 h-4 inline mr-1" />
-            {error}
+            {error instanceof Error ? error.message : 'An error occurred'}
           </div>
         )}
       </CardHeader>
@@ -241,9 +211,14 @@ export function WeatherLocationPanel({
                 onChange={e => setNewLocation(e.target.value)}
                 onKeyDown={e => e.key === 'Enter' && handleLocationUpdate()}
                 className="flex-1 px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                disabled={isUpdatingLocation}
               />
-              <Button size="sm" onClick={handleLocationUpdate}>
-                Update
+              <Button
+                size="sm"
+                onClick={handleLocationUpdate}
+                disabled={isUpdatingLocation || !newLocation.trim()}
+              >
+                {isUpdatingLocation ? <RefreshCw className="w-4 h-4 animate-spin" /> : 'Update'}
               </Button>
               <Button size="sm" variant="outline" onClick={() => setShowLocationInput(false)}>
                 Cancel
@@ -386,9 +361,9 @@ export function WeatherLocationPanel({
             size="sm"
             className="flex-1"
             onClick={handleAutoLocate}
-            disabled={isLoading}
+            disabled={isAutoLocating}
           >
-            <MapPin className="w-4 h-4 mr-1" />
+            {isAutoLocating ? <RefreshCw className="w-4 h-4 mr-1 animate-spin" /> : <MapPin className="w-4 h-4 mr-1" />}
             Auto-locate
           </Button>
           <Button variant="outline" size="sm" className="flex-1">

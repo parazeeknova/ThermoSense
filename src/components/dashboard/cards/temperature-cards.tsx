@@ -1,9 +1,10 @@
 'use client'
 
-import { AlertTriangle, CheckCircle, Thermometer, TrendingDown, TrendingUp } from 'lucide-react'
+import { AlertTriangle, CheckCircle, RefreshCw, Thermometer, TrendingDown, TrendingUp } from 'lucide-react'
 import React from 'react'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { useWeather } from '@/hooks/use-weather'
 
 export function DeviceTemperatureCard({
   temperature,
@@ -78,13 +79,9 @@ export function DeviceTemperatureCard({
   )
 }
 
-export function OutdoorTemperatureCard({
-  temperature,
-  trend = -0.5,
-}: {
-  temperature: number
-  trend?: number
-}) {
+export function OutdoorTemperatureCard() {
+  const { weatherData, isLoading, error } = useWeather()
+
   const getWeatherCondition = (temp: number) => {
     if (temp > 35) {
       return { condition: 'Very Hot', icon: '🔥' }
@@ -98,6 +95,78 @@ export function OutdoorTemperatureCard({
     return { condition: 'Cool', icon: '🌤️' }
   }
 
+  const getTrendIcon = (trend: number) => {
+    if (Math.abs(trend) < 0.1) {
+      // No significant change
+      return (
+        <div className="w-4 h-4 mr-1 flex items-center justify-center">
+          <div className="w-3 h-0.5 bg-gray-400 rounded"></div>
+        </div>
+      )
+    }
+    return trend > 0
+      ? <TrendingUp className="w-4 h-4 mr-1" />
+      : <TrendingDown className="w-4 h-4 mr-1" />
+  }
+
+  const getTrendText = (trend: number) => {
+    const absTramp = Math.abs(trend)
+    if (absTramp < 0.1)
+      return '0.0°C from last hour'
+
+    const sign = trend > 0 ? '+' : ''
+    return `${sign}${trend.toFixed(1)}°C from last hour`
+  }
+
+  const getTrendColor = (trend: number) => {
+    if (Math.abs(trend) < 0.1)
+      return 'text-gray-400'
+
+    return trend > 0 ? 'text-red-400' : 'text-blue-400'
+  }
+
+  if (isLoading) {
+    return (
+      <Card className="bg-gray-900/90 backdrop-blur-sm border-gray-800/50 hover:bg-gray-900/95 transition-all duration-300 shadow-lg hover:shadow-xl h-full flex flex-col">
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
+          <CardTitle className="text-sm font-medium text-gray-300 uppercase tracking-wide">
+            Outdoor Temperature
+          </CardTitle>
+          <div className="p-2 bg-teal-900/50 rounded-lg">
+            <RefreshCw className="h-5 w-5 text-teal-400 animate-spin" />
+          </div>
+        </CardHeader>
+        <CardContent className="flex-1 flex items-center justify-center">
+          <div className="text-center text-gray-400">
+            <div className="text-sm">Loading...</div>
+          </div>
+        </CardContent>
+      </Card>
+    )
+  }
+
+  if (error || !weatherData) {
+    return (
+      <Card className="bg-gray-900/90 backdrop-blur-sm border-gray-800/50 hover:bg-gray-900/95 transition-all duration-300 shadow-lg hover:shadow-xl h-full flex flex-col">
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
+          <CardTitle className="text-sm font-medium text-gray-300 uppercase tracking-wide">
+            Outdoor Temperature
+          </CardTitle>
+          <div className="p-2 bg-red-900/50 rounded-lg">
+            <Thermometer className="h-5 w-5 text-red-400" />
+          </div>
+        </CardHeader>
+        <CardContent className="flex-1 flex items-center justify-center">
+          <div className="text-center text-gray-400">
+            <div className="text-sm">Data unavailable</div>
+          </div>
+        </CardContent>
+      </Card>
+    )
+  }
+
+  const temperature = weatherData.temperature
+  const trend = weatherData.temperatureTrend || 0
   const weather = getWeatherCondition(temperature)
 
   return (
@@ -116,10 +185,9 @@ export function OutdoorTemperatureCard({
             {temperature.toFixed(1)}
             °C
           </div>
-          <div className="flex items-center text-sm text-teal-400 mb-3">
-            <TrendingDown className="w-4 h-4 mr-1" />
-            {trend.toFixed(1)}
-            °C from last hour
+          <div className={`flex items-center text-sm mb-3 ${getTrendColor(trend)}`}>
+            {getTrendIcon(trend)}
+            {getTrendText(trend)}
           </div>
         </div>
 
@@ -143,7 +211,9 @@ export function OutdoorTemperatureCard({
               </span>
             </div>
             <div className="text-center text-xs text-gray-400 mt-1">
-              Heat index adjusted
+              {weatherData.lastReading
+                ? `Last: ${weatherData.lastReading.temperature.toFixed(1)}°C`
+                : 'Heat index adjusted'}
             </div>
           </div>
         </div>

@@ -3,6 +3,7 @@
 import type { DashboardPage } from './sidebar-navigation'
 import React, { useEffect, useState } from 'react'
 import { getRiskLevel } from '@/lib/dashboard-utils'
+import { QueryProvider } from '@/providers/query-provider'
 import { BlueprintGrid } from './blueprint-grid'
 import { BatteryCard } from './cards/battery-card'
 import { DeviceConfigPanel } from './cards/device-config-panel'
@@ -49,7 +50,7 @@ const pageCards = {
   ],
 }
 
-export default function Dashboard() {
+function DashboardContent() {
   const [currentDeviceTemp, setCurrentDeviceTemp] = useState(42)
   const [currentOutdoorTemp, setCurrentOutdoorTemp] = useState(38)
   const [batteryLevel, _setBatteryLevel] = useState(78)
@@ -264,7 +265,7 @@ export default function Dashboard() {
                             case 'device-temp':
                               return <DeviceTemperatureCard temperature={currentDeviceTemp} />
                             case 'outdoor-temp':
-                              return <OutdoorTemperatureCard temperature={currentOutdoorTemp} />
+                              return <OutdoorTemperatureCard />
                             case 'battery-level':
                               return <BatteryCard batteryLevel={batteryLevel} />
                             case 'heat-risk-meter':
@@ -305,48 +306,50 @@ export default function Dashboard() {
                     onDragLeave={handleDragLeave}
                     className="col-span-1 p-1"
                   >
-                    <DraggableCard
-                      id={cardItem.id}
-                      onDragStart={handleDragStart}
-                      onDragEnd={handleDragEnd}
-                      onDragOver={handleDragOver}
-                      onDrop={handleDrop}
-                      isDragging={draggedCard === cardItem.id}
-                      dragOverTarget={dragOverTarget}
-                    >
-                      {(() => {
-                        switch (cardItem.id) {
-                          case 'device-temp':
-                            return <DeviceTemperatureCard temperature={currentDeviceTemp} />
-                          case 'outdoor-temp':
-                            return <OutdoorTemperatureCard temperature={currentOutdoorTemp} />
-                          case 'battery-level':
-                            return <BatteryCard batteryLevel={batteryLevel} />
-                          case 'heat-risk-meter':
-                            return (
-                              <HeatRiskMeter
-                                currentRisk={currentRisk}
-                                riskValue={riskValue}
-                                trend={trend}
-                                deviceTemp={currentDeviceTemp}
-                                ambientTemp={currentOutdoorTemp}
-                              />
-                            )
-                          case 'notification-center':
-                            return <NotificationCenter />
-                          case 'weather-location':
-                            return <WeatherLocationPanel />
-                          case 'predictive-analytics':
-                            return <PredictiveAnalyticsPanel />
-                          case 'historical-data':
-                            return <HistoricalDataPanel />
-                          case 'device-config':
-                            return <DeviceConfigPanel />
-                          default:
-                            return null
-                        }
-                      })()}
-                    </DraggableCard>
+                    <div className="h-full">
+                      <DraggableCard
+                        id={cardItem.id}
+                        onDragStart={handleDragStart}
+                        onDragEnd={handleDragEnd}
+                        onDragOver={handleDragOver}
+                        onDrop={handleDrop}
+                        isDragging={draggedCard === cardItem.id}
+                        dragOverTarget={dragOverTarget}
+                      >
+                        {(() => {
+                          switch (cardItem.id) {
+                            case 'device-temp':
+                              return <DeviceTemperatureCard temperature={currentDeviceTemp} />
+                            case 'outdoor-temp':
+                              return <OutdoorTemperatureCard />
+                            case 'battery-level':
+                              return <BatteryCard batteryLevel={batteryLevel} />
+                            case 'heat-risk-meter':
+                              return (
+                                <HeatRiskMeter
+                                  currentRisk={currentRisk}
+                                  riskValue={riskValue}
+                                  trend={trend}
+                                  deviceTemp={currentDeviceTemp}
+                                  ambientTemp={currentOutdoorTemp}
+                                />
+                              )
+                            case 'notification-center':
+                              return <NotificationCenter />
+                            case 'weather-location':
+                              return <WeatherLocationPanel />
+                            case 'predictive-analytics':
+                              return <PredictiveAnalyticsPanel />
+                            case 'historical-data':
+                              return <HistoricalDataPanel />
+                            case 'device-config':
+                              return <DeviceConfigPanel />
+                            default:
+                              return null
+                          }
+                        })()}
+                      </DraggableCard>
+                    </div>
                   </div>
                 ))}
               </div>
@@ -359,48 +362,50 @@ export default function Dashboard() {
                     onDragLeave={handleDragLeave}
                     className="col-span-1 p-1"
                   >
-                    <DraggableCard
-                      id={cardItem.id}
-                      onDragStart={handleDragStart}
-                      onDragEnd={handleDragEnd}
-                      onDragOver={handleDragOver}
-                      onDrop={handleDrop}
-                      isDragging={draggedCard === cardItem.id}
-                      dragOverTarget={dragOverTarget}
-                    >
-                      {(() => {
-                        switch (cardItem.id) {
-                          case 'device-temp':
-                            return <DeviceTemperatureCard temperature={currentDeviceTemp} />
-                          case 'outdoor-temp':
-                            return <OutdoorTemperatureCard temperature={currentOutdoorTemp} />
-                          case 'battery-level':
-                            return <BatteryCard batteryLevel={batteryLevel} />
-                          case 'heat-risk-meter':
-                            return (
-                              <HeatRiskMeter
-                                currentRisk={currentRisk}
-                                riskValue={riskValue}
-                                trend={trend}
-                                deviceTemp={currentDeviceTemp}
-                                ambientTemp={currentOutdoorTemp}
-                              />
-                            )
-                          case 'notification-center':
-                            return <NotificationCenter />
-                          case 'weather-location':
-                            return <WeatherLocationPanel />
-                          case 'predictive-analytics':
-                            return <PredictiveAnalyticsPanel />
-                          case 'historical-data':
-                            return <HistoricalDataPanel />
-                          case 'device-config':
-                            return <DeviceConfigPanel />
-                          default:
-                            return null
-                        }
-                      })()}
-                    </DraggableCard>
+                    <div className="h-full">
+                      <DraggableCard
+                        id={cardItem.id}
+                        onDragStart={handleDragStart}
+                        onDragEnd={handleDragEnd}
+                        onDragOver={handleDragOver}
+                        onDrop={handleDrop}
+                        isDragging={draggedCard === cardItem.id}
+                        dragOverTarget={dragOverTarget}
+                      >
+                        {(() => {
+                          switch (cardItem.id) {
+                            case 'device-temp':
+                              return <DeviceTemperatureCard temperature={currentDeviceTemp} />
+                            case 'outdoor-temp':
+                              return <OutdoorTemperatureCard />
+                            case 'battery-level':
+                              return <BatteryCard batteryLevel={batteryLevel} />
+                            case 'heat-risk-meter':
+                              return (
+                                <HeatRiskMeter
+                                  currentRisk={currentRisk}
+                                  riskValue={riskValue}
+                                  trend={trend}
+                                  deviceTemp={currentDeviceTemp}
+                                  ambientTemp={currentOutdoorTemp}
+                                />
+                              )
+                            case 'notification-center':
+                              return <NotificationCenter />
+                            case 'weather-location':
+                              return <WeatherLocationPanel />
+                            case 'predictive-analytics':
+                              return <PredictiveAnalyticsPanel />
+                            case 'historical-data':
+                              return <HistoricalDataPanel />
+                            case 'device-config':
+                              return <DeviceConfigPanel />
+                            default:
+                              return null
+                          }
+                        })()}
+                      </DraggableCard>
+                    </div>
                   </div>
                 ))}
               </div>
@@ -409,5 +414,13 @@ export default function Dashboard() {
         </div>
       </div>
     </div>
+  )
+}
+
+export default function Dashboard() {
+  return (
+    <QueryProvider>
+      <DashboardContent />
+    </QueryProvider>
   )
 }
