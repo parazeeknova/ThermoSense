@@ -282,7 +282,7 @@ function DashboardContent() {
               <div
                 className="hidden lg:grid grid-cols-4 gap-3 w-full h-full"
                 style={{
-                  gridAutoRows: currentPage === 'analytics' ? 'minmax(120px, auto)' : 'minmax(140px, 1fr)',
+                  gridAutoRows: currentPage === 'analytics' ? 'minmax(120px, auto)' : 'minmax(140px, auto)',
                 }}
               >
                 {currentCardOrder.map(cardItem => (
@@ -309,7 +309,7 @@ function DashboardContent() {
                 ))}
               </div>
 
-              <div className="hidden md:grid lg:hidden grid-cols-2 gap-2 w-full h-full" style={{ gridAutoRows: 'minmax(140px, 1fr)' }}>
+              <div className="hidden md:grid lg:hidden grid-cols-2 gap-2 w-full h-full" style={{ gridAutoRows: 'minmax(140px, auto)' }}>
                 {currentCardOrder.map(cardItem => (
                   <div
                     key={cardItem.id}

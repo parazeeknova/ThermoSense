@@ -107,9 +107,9 @@ async function collectDataPoint(location?: { lat: number, lng: number, city: str
         : 95,
       deviceState: (deviceInfo.load?.currentLoad || 0) > 50 ? 'active' : (deviceInfo.load?.currentLoad || 0) > 10 ? 'idle' : 'sleep',
       location: location || {
-        lat: 37.7749,
-        lng: -122.4194,
-        city: 'San Francisco',
+        lat: 0,
+        lng: 0,
+        city: 'Unknown Location',
       },
     }
 

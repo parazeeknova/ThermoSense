@@ -54,7 +54,11 @@ export function HistoricalDataPanel() {
           lng: weatherData.coordinates?.lng || 0,
           city: weatherData.location,
         }
-      : undefined
+      : {
+          lat: 0,
+          lng: 0,
+          city: globalLocation || 'Unknown Location',
+        }
 
   const { data: historicalResponse, isLoading, error, refetch } = useHistoricalData(timeRange, 30, currentLocation)
 
@@ -638,7 +642,7 @@ export function HistoricalDataPanel() {
                 </div>
 
                 {/* Location and Time Info */}
-                {data[0]?.location && (
+                {(data[0]?.location || currentLocation) && (
                   <div className="flex flex-col sm:flex-row sm:items-center space-y-2 sm:space-y-0 sm:space-x-4 p-3 bg-blue-50 rounded-lg">
                     <div className="flex items-center space-x-2">
                       <MapPin className="w-3 h-3 sm:w-4 sm:h-4 text-blue-600" />
@@ -646,17 +650,24 @@ export function HistoricalDataPanel() {
                         <div className="text-xs sm:text-sm font-medium text-gray-900">
                           Location:
                           {' '}
-                          {data[0].location.city}
-                          {!currentLocation && (
-                            <span className="text-red-500 ml-1 text-xs">
-                              (Default - change weather location to sync)
+                          {currentLocation?.city || data[0]?.location?.city || 'Unknown Location'}
+                          {(currentLocation?.city && currentLocation.city !== data[0]?.location?.city) && (
+                            <span className="text-green-600 ml-1 text-xs">
+                              ✓ Synced with global location
+                            </span>
+                          )}
+                          {(!currentLocation || (currentLocation.lat === 0 && currentLocation.lng === 0)) && data[0]?.location?.city === 'San Francisco' && (
+                            <span className="text-amber-600 ml-1 text-xs">
+                              (Using fallback - set your location in weather panel)
                             </span>
                           )}
                         </div>
                         <div className="text-xs text-gray-600">
-                          {data[0].location.lat.toFixed(4)}
-                          ,
-                          {data[0].location.lng.toFixed(4)}
+                          {(currentLocation?.lat && currentLocation?.lng)
+                            ? `${currentLocation.lat.toFixed(4)}, ${currentLocation.lng.toFixed(4)}`
+                            : data[0]?.location
+                              ? `${data[0].location.lat.toFixed(4)}, ${data[0].location.lng.toFixed(4)}`
+                              : 'No coordinates'}
                           {currentLocation && currentLocation.lat !== 0 && currentLocation.lng !== 0 && (
                             <span className="text-green-600 ml-2 text-xs">
                               ✓ Real coordinates
