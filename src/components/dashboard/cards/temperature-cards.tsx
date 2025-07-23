@@ -4,26 +4,81 @@ import { AlertTriangle, CheckCircle, RefreshCw, Thermometer, TrendingDown, Trend
 import React from 'react'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { useDeviceInfo } from '@/hooks/use-device-info'
 import { useWeather } from '@/hooks/use-weather'
 
-export function DeviceTemperatureCard({
-  temperature,
-  trend = 2.1,
-}: {
-  temperature: number
+interface DeviceTemperatureCardProps {
+  fallbackTemperature?: number
   trend?: number
-}) {
+}
+
+export function DeviceTemperatureCard({
+  fallbackTemperature = 42,
+  trend = 2.1,
+}: DeviceTemperatureCardProps) {
+  const { data: deviceInfo, isLoading, error } = useDeviceInfo()
+
   const getTempStatus = (temp: number) => {
-    if (temp > 45) {
+    if (temp > 75) {
       return { status: 'Critical', color: 'bg-red-500', textColor: 'text-red-600', icon: AlertTriangle }
     }
-    if (temp > 40) {
+    if (temp > 65) {
+      return { status: 'Hot', color: 'bg-orange-500', textColor: 'text-orange-600', icon: AlertTriangle }
+    }
+    if (temp > 55) {
       return { status: 'Warm', color: 'bg-amber-500', textColor: 'text-amber-600', icon: AlertTriangle }
     }
     return { status: 'Normal', color: 'bg-emerald-500', textColor: 'text-emerald-600', icon: CheckCircle }
   }
 
+  const getAverageTemp = (coreTemps: number[]) => {
+    if (!coreTemps || coreTemps.length === 0)
+      return null
+    return coreTemps.reduce((sum, temp) => sum + temp, 0) / coreTemps.length
+  }
+
+  if (isLoading) {
+    return (
+      <Card className="bg-white/95 backdrop-blur-sm border-gray-200/50 hover:bg-white transition-all duration-300 shadow-lg hover:shadow-xl h-full flex flex-col">
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
+          <CardTitle className="text-sm font-medium text-gray-600 uppercase tracking-wide">
+            Device Temperature
+          </CardTitle>
+          <div className="p-2 bg-emerald-100 rounded-lg">
+            <RefreshCw className="h-5 w-5 text-emerald-600 animate-spin" />
+          </div>
+        </CardHeader>
+        <CardContent className="flex-1 flex items-center justify-center">
+          <div className="text-center text-gray-400">
+            <div className="text-sm">Loading temperature...</div>
+          </div>
+        </CardContent>
+      </Card>
+    )
+  }
+
+  // Use device temperature if available, otherwise fall back to provided temperature
+  let temperature = fallbackTemperature
+  let tempSource = 'Estimated'
+
+  if (deviceInfo?.temperature?.cpu) {
+    temperature = deviceInfo.temperature.cpu
+    tempSource = 'CPU'
+  }
+  else if (deviceInfo?.temperature?.cores && deviceInfo.temperature.cores.length > 0) {
+    const avgTemp = getAverageTemp(deviceInfo.temperature.cores)
+    if (avgTemp) {
+      temperature = avgTemp
+      tempSource = 'CPU Cores'
+    }
+  }
+  else if (deviceInfo?.temperature?.max) {
+    temperature = deviceInfo.temperature.max
+    tempSource = 'Max Sensor'
+  }
+
   const tempStatus = getTempStatus(temperature)
+  const StatusIcon = tempStatus.icon
 
   return (
     <Card className="bg-white/95 backdrop-blur-sm border-gray-200/50 hover:bg-white transition-all duration-300 shadow-lg hover:shadow-xl h-full flex flex-col">
@@ -52,24 +107,34 @@ export function DeviceTemperatureCard({
         <div className="space-y-2">
           <div className="flex items-center justify-between">
             <span className="text-xs text-gray-500">Status</span>
-            <Badge className={`${tempStatus.color} text-white text-xs px-2 py-1`}>
+            <Badge className={`${tempStatus.color} text-white text-xs px-2 py-1 flex items-center gap-1`}>
+              <StatusIcon className="w-3 h-3" />
               {tempStatus.status}
             </Badge>
           </div>
 
           <div className="pt-2 border-t border-gray-200">
             <div className="flex items-center justify-between text-xs text-gray-500 mb-1">
-              <span>Today's Range</span>
+              <span>
+                Source:
+                {tempSource}
+              </span>
+              {error && <span className="text-red-500">Data limited</span>}
             </div>
+            {deviceInfo?.temperature?.cores && deviceInfo.temperature.cores.length > 0 && (
+              <div className="text-xs text-gray-500 mb-2">
+                Core temps:
+                {' '}
+                {deviceInfo.temperature.cores.slice(0, 4).map(temp => `${temp.toFixed(1)}°C`).join(', ')}
+                {deviceInfo.temperature.cores.length > 4 && '...'}
+              </div>
+            )}
             <div className="flex justify-between text-sm">
               <span className="text-blue-600 font-medium">
-                {(temperature - 5).toFixed(1)}
-                °C
+                Safe: &lt;55°C
               </span>
-              <span className="text-gray-400">to</span>
               <span className="text-red-600 font-medium">
-                {(temperature + 3).toFixed(1)}
-                °C
+                Critical: &gt;75°C
               </span>
             </div>
           </div>

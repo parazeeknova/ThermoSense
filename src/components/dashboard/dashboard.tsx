@@ -2,7 +2,6 @@
 
 import type { DashboardPage } from './sidebar-navigation'
 import React, { useEffect, useState } from 'react'
-import { getRiskLevel } from '@/lib/dashboard-utils'
 import { QueryProvider } from '@/providers/query-provider'
 import { BlueprintGrid } from './blueprint-grid'
 import { BatteryCard } from './cards/battery-card'
@@ -51,9 +50,6 @@ const pageCards = {
 }
 
 function DashboardContent() {
-  const [currentDeviceTemp, setCurrentDeviceTemp] = useState(42)
-  const [currentOutdoorTemp, setCurrentOutdoorTemp] = useState(38)
-  const [batteryLevel, _setBatteryLevel] = useState(78)
   const [draggedCard, setDraggedCard] = useState<string | null>(null)
   const [dragOverTarget, setDragOverTarget] = useState<string | null>(null)
   const [currentPage, setCurrentPage] = useState<DashboardPage>('monitoring')
@@ -66,13 +62,17 @@ function DashboardContent() {
   useEffect(() => {
     const checkScreenSize = () => {
       const mobile = window.innerWidth < 768
+      // eslint-disable-next-line react-hooks-extra/no-direct-set-state-in-use-effect
       setIsMobile(mobile)
 
       if (mobile) {
+        // eslint-disable-next-line react-hooks-extra/no-direct-set-state-in-use-effect
         setIsCollapsed(true)
+        // eslint-disable-next-line react-hooks-extra/no-direct-set-state-in-use-effect
         setSidebarVisible(false)
       }
       else {
+        // eslint-disable-next-line react-hooks-extra/no-direct-set-state-in-use-effect
         setSidebarVisible(true)
       }
     }
@@ -82,25 +82,6 @@ function DashboardContent() {
 
     return () => window.removeEventListener('resize', checkScreenSize)
   }, [])
-
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setCurrentDeviceTemp(prev => prev + (Math.random() - 0.5) * 2)
-      setCurrentOutdoorTemp(prev => prev + (Math.random() - 0.5) * 1)
-    }, 5000)
-    return () => clearInterval(interval)
-  }, [])
-
-  const currentRisk = getRiskLevel(currentDeviceTemp, currentOutdoorTemp)
-
-  const riskValue = Math.min(100, Math.max(0, ((currentDeviceTemp - currentOutdoorTemp) / 20) * 100))
-
-  const trend: 'increasing' | 'decreasing' | 'stable'
-    = currentDeviceTemp > 43
-      ? 'increasing'
-      : currentDeviceTemp < 40
-        ? 'decreasing'
-        : 'stable'
 
   const handlePageChange = (page: DashboardPage) => {
     setCurrentPage(page)
@@ -168,12 +149,37 @@ function DashboardContent() {
   const currentCardOrder = currentPage === 'monitoring' ? monitoringCardOrder : analyticsCardOrder
 
   const pageTitle = currentPage === 'monitoring'
-    ? 'Real-time Monitoring Dashboard'
+    ? 'Real-time Device Monitoring Dashboard'
     : 'Analytics & Configuration Center'
 
   const pageDescription = currentPage === 'monitoring'
-    ? 'Live thermal monitoring with immediate insights and recommendations'
+    ? 'Live device thermal monitoring with real-time insights and recommendations'
     : 'Historical analysis, predictions, and device configuration settings'
+
+  const renderCard = (cardId: string) => {
+    switch (cardId) {
+      case 'device-temp':
+        return <DeviceTemperatureCard />
+      case 'outdoor-temp':
+        return <OutdoorTemperatureCard />
+      case 'battery-level':
+        return <BatteryCard />
+      case 'heat-risk-meter':
+        return <HeatRiskMeter />
+      case 'notification-center':
+        return <NotificationCenter />
+      case 'weather-location':
+        return <WeatherLocationPanel />
+      case 'predictive-analytics':
+        return <PredictiveAnalyticsPanel />
+      case 'historical-data':
+        return <HistoricalDataPanel />
+      case 'device-config':
+        return <DeviceConfigPanel />
+      default:
+        return null
+    }
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
@@ -260,38 +266,7 @@ function DashboardContent() {
                         isDragging={draggedCard === cardItem.id}
                         dragOverTarget={dragOverTarget}
                       >
-                        {(() => {
-                          switch (cardItem.id) {
-                            case 'device-temp':
-                              return <DeviceTemperatureCard temperature={currentDeviceTemp} />
-                            case 'outdoor-temp':
-                              return <OutdoorTemperatureCard />
-                            case 'battery-level':
-                              return <BatteryCard batteryLevel={batteryLevel} />
-                            case 'heat-risk-meter':
-                              return (
-                                <HeatRiskMeter
-                                  currentRisk={currentRisk}
-                                  riskValue={riskValue}
-                                  trend={trend}
-                                  deviceTemp={currentDeviceTemp}
-                                  ambientTemp={currentOutdoorTemp}
-                                />
-                              )
-                            case 'notification-center':
-                              return <NotificationCenter />
-                            case 'weather-location':
-                              return <WeatherLocationPanel />
-                            case 'predictive-analytics':
-                              return <PredictiveAnalyticsPanel />
-                            case 'historical-data':
-                              return <HistoricalDataPanel />
-                            case 'device-config':
-                              return <DeviceConfigPanel />
-                            default:
-                              return null
-                          }
-                        })()}
+                        {renderCard(cardItem.id)}
                       </DraggableCard>
                     </div>
                   </div>
@@ -316,38 +291,7 @@ function DashboardContent() {
                         isDragging={draggedCard === cardItem.id}
                         dragOverTarget={dragOverTarget}
                       >
-                        {(() => {
-                          switch (cardItem.id) {
-                            case 'device-temp':
-                              return <DeviceTemperatureCard temperature={currentDeviceTemp} />
-                            case 'outdoor-temp':
-                              return <OutdoorTemperatureCard />
-                            case 'battery-level':
-                              return <BatteryCard batteryLevel={batteryLevel} />
-                            case 'heat-risk-meter':
-                              return (
-                                <HeatRiskMeter
-                                  currentRisk={currentRisk}
-                                  riskValue={riskValue}
-                                  trend={trend}
-                                  deviceTemp={currentDeviceTemp}
-                                  ambientTemp={currentOutdoorTemp}
-                                />
-                              )
-                            case 'notification-center':
-                              return <NotificationCenter />
-                            case 'weather-location':
-                              return <WeatherLocationPanel />
-                            case 'predictive-analytics':
-                              return <PredictiveAnalyticsPanel />
-                            case 'historical-data':
-                              return <HistoricalDataPanel />
-                            case 'device-config':
-                              return <DeviceConfigPanel />
-                            default:
-                              return null
-                          }
-                        })()}
+                        {renderCard(cardItem.id)}
                       </DraggableCard>
                     </div>
                   </div>
@@ -372,38 +316,7 @@ function DashboardContent() {
                         isDragging={draggedCard === cardItem.id}
                         dragOverTarget={dragOverTarget}
                       >
-                        {(() => {
-                          switch (cardItem.id) {
-                            case 'device-temp':
-                              return <DeviceTemperatureCard temperature={currentDeviceTemp} />
-                            case 'outdoor-temp':
-                              return <OutdoorTemperatureCard />
-                            case 'battery-level':
-                              return <BatteryCard batteryLevel={batteryLevel} />
-                            case 'heat-risk-meter':
-                              return (
-                                <HeatRiskMeter
-                                  currentRisk={currentRisk}
-                                  riskValue={riskValue}
-                                  trend={trend}
-                                  deviceTemp={currentDeviceTemp}
-                                  ambientTemp={currentOutdoorTemp}
-                                />
-                              )
-                            case 'notification-center':
-                              return <NotificationCenter />
-                            case 'weather-location':
-                              return <WeatherLocationPanel />
-                            case 'predictive-analytics':
-                              return <PredictiveAnalyticsPanel />
-                            case 'historical-data':
-                              return <HistoricalDataPanel />
-                            case 'device-config':
-                              return <DeviceConfigPanel />
-                            default:
-                              return null
-                          }
-                        })()}
+                        {renderCard(cardItem.id)}
                       </DraggableCard>
                     </div>
                   </div>

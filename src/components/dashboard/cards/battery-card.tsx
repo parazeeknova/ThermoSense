@@ -1,16 +1,15 @@
 'use client'
 
-import { Battery, Clock, TrendingUp } from 'lucide-react'
+import { AlertTriangle, Battery, Clock, TrendingUp } from 'lucide-react'
 import React from 'react'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Progress } from '@/components/ui/progress'
+import { useDeviceInfo } from '@/hooks/use-device-info'
 
-interface BatteryCardProps {
-  batteryLevel: number
-}
+export function BatteryCard() {
+  const { data: deviceInfo, isLoading, error } = useDeviceInfo()
 
-export function BatteryCard({ batteryLevel }: BatteryCardProps) {
   const getBatteryStatus = (level: number) => {
     if (level > 80) {
       return { status: 'Excellent', color: 'bg-emerald-500', textColor: 'text-emerald-600' }
@@ -24,11 +23,86 @@ export function BatteryCard({ batteryLevel }: BatteryCardProps) {
     return { status: 'Critical', color: 'bg-red-500', textColor: 'text-red-600' }
   }
 
+  const formatTimeRemaining = (minutes: number | null) => {
+    if (!minutes || minutes <= 0)
+      return 'Calculating...'
+    const hours = Math.floor(minutes / 60)
+    const mins = minutes % 60
+    return `${hours}h ${mins}m`
+  }
+
+  const calculateHealth = (maxCapacity: number, designedCapacity: number) => {
+    if (!maxCapacity || !designedCapacity)
+      return 0
+    return Math.round((maxCapacity / designedCapacity) * 100)
+  }
+
+  if (isLoading) {
+    return (
+      <Card className="bg-white/95 backdrop-blur-sm border-gray-200/50 hover:bg-white transition-all duration-300 shadow-lg hover:shadow-xl h-full flex flex-col">
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
+          <CardTitle className="text-sm font-medium text-gray-600 uppercase tracking-wide">
+            Battery Level
+          </CardTitle>
+          <div className="p-2 bg-emerald-100 rounded-lg">
+            <Battery className="h-5 w-5 text-emerald-600 animate-pulse" />
+          </div>
+        </CardHeader>
+        <CardContent className="flex-1 flex items-center justify-center">
+          <div className="text-center text-gray-400">
+            <div className="text-sm">Loading battery info...</div>
+          </div>
+        </CardContent>
+      </Card>
+    )
+  }
+
+  if (error || !deviceInfo?.battery) {
+    return (
+      <Card className="bg-white/95 backdrop-blur-sm border-gray-200/50 hover:bg-white transition-all duration-300 shadow-lg hover:shadow-xl h-full flex flex-col">
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
+          <CardTitle className="text-sm font-medium text-gray-600 uppercase tracking-wide">
+            Battery Level
+          </CardTitle>
+          <div className="p-2 bg-red-100 rounded-lg">
+            <AlertTriangle className="h-5 w-5 text-red-600" />
+          </div>
+        </CardHeader>
+        <CardContent className="flex-1 flex items-center justify-center">
+          <div className="text-center text-gray-400">
+            <div className="text-sm">Battery info unavailable</div>
+          </div>
+        </CardContent>
+      </Card>
+    )
+  }
+
+  const { battery } = deviceInfo
+
+  if (!battery.hasBattery) {
+    return (
+      <Card className="bg-white/95 backdrop-blur-sm border-gray-200/50 hover:bg-white transition-all duration-300 shadow-lg hover:shadow-xl h-full flex flex-col">
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
+          <CardTitle className="text-sm font-medium text-gray-600 uppercase tracking-wide">
+            Battery Level
+          </CardTitle>
+          <div className="p-2 bg-gray-100 rounded-lg">
+            <Battery className="h-5 w-5 text-gray-600" />
+          </div>
+        </CardHeader>
+        <CardContent className="flex-1 flex items-center justify-center">
+          <div className="text-center text-gray-400">
+            <div className="text-sm">No battery detected</div>
+            <div className="text-xs mt-1">AC powered device</div>
+          </div>
+        </CardContent>
+      </Card>
+    )
+  }
+
+  const batteryLevel = Math.round(battery.percent)
   const batteryStatus = getBatteryStatus(batteryLevel)
-  const estimatedTime = Math.floor((batteryLevel / 100) * 8) // Mock estimated hours
-  const cycleCount = 847 // Mock cycle count
-  const health = Math.floor(94 + (batteryLevel - 78) * 0.1) // Mock health percentage
-  const estimatedMinutes = ((batteryLevel % 100) * 0.6).toFixed(0)
+  const health = calculateHealth(battery.maxCapacity, battery.designedCapacity)
 
   return (
     <Card className="bg-white/95 backdrop-blur-sm border-gray-200/50 hover:bg-white transition-all duration-300 shadow-lg hover:shadow-xl h-full flex flex-col">
@@ -37,7 +111,7 @@ export function BatteryCard({ batteryLevel }: BatteryCardProps) {
           Battery Level
         </CardTitle>
         <div className="p-2 bg-emerald-100 rounded-lg">
-          <Battery className="h-5 w-5 text-emerald-600" />
+          <Battery className={`h-5 w-5 text-emerald-600 ${battery.isCharging ? 'animate-pulse' : ''}`} />
         </div>
       </CardHeader>
       <CardContent className="flex-1 flex flex-col justify-between space-y-3">
@@ -47,6 +121,12 @@ export function BatteryCard({ batteryLevel }: BatteryCardProps) {
             %
           </div>
           <Progress value={batteryLevel} className="h-3 bg-gray-200 [&>div]:bg-emerald-500 mb-3" />
+          {battery.isCharging && (
+            <div className="flex items-center text-sm text-emerald-600 mb-2">
+              <TrendingUp className="w-4 h-4 mr-1" />
+              Charging
+            </div>
+          )}
         </div>
 
         <div className="space-y-2">
@@ -61,14 +141,10 @@ export function BatteryCard({ batteryLevel }: BatteryCardProps) {
             <div className="text-center">
               <div className="flex items-center justify-center text-xs text-gray-500 mb-1">
                 <Clock className="w-3 h-3 mr-1" />
-                Time Left
+                {battery.isCharging ? 'Full in' : 'Time Left'}
               </div>
               <div className="text-sm font-medium text-gray-900">
-                {estimatedTime}
-                h
-                {' '}
-                {estimatedMinutes}
-                m
+                {formatTimeRemaining(battery.timeRemaining)}
               </div>
             </div>
             <div className="text-center">
@@ -76,7 +152,7 @@ export function BatteryCard({ batteryLevel }: BatteryCardProps) {
                 <TrendingUp className="w-3 h-3 mr-1" />
                 Health
               </div>
-              <div className="text-sm font-medium text-emerald-600">
+              <div className={`text-sm font-medium ${health > 80 ? 'text-emerald-600' : health > 60 ? 'text-amber-600' : 'text-red-600'}`}>
                 {health}
                 %
               </div>
@@ -87,7 +163,14 @@ export function BatteryCard({ batteryLevel }: BatteryCardProps) {
             <div className="text-xs text-gray-400">
               Cycle Count:
               {' '}
-              {cycleCount}
+              {battery.cycleCount || 'N/A'}
+              {battery.model && (
+                <div className="mt-1">
+                  {battery.manufacturer}
+                  {' '}
+                  {battery.model}
+                </div>
+              )}
             </div>
           </div>
         </div>

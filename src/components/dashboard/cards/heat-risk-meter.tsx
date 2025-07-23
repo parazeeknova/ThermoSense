@@ -1,27 +1,53 @@
 'use client'
 
 import type { RiskStatus } from '@/types/dashboard'
-import { AlertTriangle, Minus, Thermometer, TrendingDown, TrendingUp } from 'lucide-react'
+import { AlertTriangle, Loader2, Minus, Thermometer, TrendingDown, TrendingUp } from 'lucide-react'
 import React from 'react'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Progress } from '@/components/ui/progress'
+import { useDeviceInfo } from '@/hooks/use-device-info'
+import { useWeather } from '@/hooks/use-weather'
 
-interface HeatRiskMeterProps {
-  currentRisk: RiskStatus
-  riskValue: number
-  trend: 'increasing' | 'decreasing' | 'stable'
-  deviceTemp: number
-  ambientTemp: number
-}
+export function HeatRiskMeter() {
+  const { data: deviceInfo, isLoading: deviceLoading, error: deviceError } = useDeviceInfo()
+  const { weatherData, isLoading: weatherLoading, error: weatherError } = useWeather()
 
-export function HeatRiskMeter({
-  currentRisk,
-  riskValue = 35,
-  trend = 'stable',
-  deviceTemp,
-  ambientTemp,
-}: HeatRiskMeterProps) {
+  const getRiskLevel = (deviceTemp: number, ambientTemp: number, cpuLoad?: number): RiskStatus => {
+    const tempDiff = deviceTemp - ambientTemp
+    const loadFactor = cpuLoad ? cpuLoad / 100 : 0.5
+
+    // Enhanced risk calculation considering multiple factors
+    if (deviceTemp > 80 || tempDiff > 25)
+      return 'critical'
+    if (deviceTemp > 70 || tempDiff > 15 || (deviceTemp > 60 && loadFactor > 0.8))
+      return 'critical'
+    if (deviceTemp > 60 || tempDiff > 10 || (deviceTemp > 50 && loadFactor > 0.7))
+      return 'caution'
+    if (deviceTemp > 50 || tempDiff > 5)
+      return 'caution'
+    return 'safe'
+  }
+
+  const calculateRiskValue = (deviceTemp: number, ambientTemp: number, cpuLoad?: number): number => {
+    const tempDiff = deviceTemp - ambientTemp
+    const loadFactor = cpuLoad ? cpuLoad / 100 : 0.5
+
+    // Multi-factor risk calculation (0-100%)
+    let risk = 0
+
+    // Temperature difference factor (0-40 points)
+    risk += Math.min(40, (tempDiff / 30) * 40)
+
+    // Absolute temperature factor (0-35 points)
+    risk += Math.min(35, Math.max(0, (deviceTemp - 30) / 50 * 35))
+
+    // CPU load factor (0-25 points)
+    risk += loadFactor * 25
+
+    return Math.min(100, Math.max(0, risk))
+  }
+
   const getRiskConfig = (risk: RiskStatus) => {
     switch (risk) {
       case 'safe':
@@ -34,6 +60,7 @@ export function HeatRiskMeter({
           progressColor: 'bg-emerald-500',
           label: 'SAFE',
           icon: <Thermometer className="w-4 h-4" />,
+          recommendation: 'Operating within safe parameters',
         }
       case 'caution':
         return {
@@ -45,6 +72,7 @@ export function HeatRiskMeter({
           progressColor: 'bg-amber-500',
           label: 'CAUTION',
           icon: <AlertTriangle className="w-4 h-4" />,
+          recommendation: 'Monitor temperature closely',
         }
       case 'critical':
         return {
@@ -56,11 +84,90 @@ export function HeatRiskMeter({
           progressColor: 'bg-red-500',
           label: 'CRITICAL',
           icon: <AlertTriangle className="w-4 h-4" />,
+          recommendation: 'Take immediate action to cool down',
         }
     }
   }
 
+  const getDeviceTemperature = () => {
+    if (deviceInfo?.temperature?.cpu)
+      return deviceInfo.temperature.cpu
+    if (deviceInfo?.temperature?.cores && deviceInfo.temperature.cores.length > 0) {
+      return deviceInfo.temperature.cores.reduce((sum, temp) => sum + temp, 0) / deviceInfo.temperature.cores.length
+    }
+    if (deviceInfo?.temperature?.max)
+      return deviceInfo.temperature.max
+    return 45 // Fallback
+  }
+
+  const getAmbientTemperature = () => {
+    return weatherData?.temperature || 25 // Fallback to 25°C
+  }
+
+  const getCpuLoad = () => {
+    return deviceInfo?.load?.currentLoad || undefined
+  }
+
+  const getTrend = (deviceTemp: number, riskValue: number): 'increasing' | 'decreasing' | 'stable' => {
+    if (deviceTemp > 70 || riskValue > 75)
+      return 'increasing'
+    if (deviceTemp < 45 || riskValue < 25)
+      return 'decreasing'
+    return 'stable'
+  }
+
+  // Loading state
+  if (deviceLoading || weatherLoading) {
+    return (
+      <Card className="backdrop-blur-sm border transition-all duration-300 shadow-lg hover:shadow-xl bg-gray-50/50 border-gray-200 h-full">
+        <CardHeader className="pb-2">
+          <CardTitle className="text-sm font-semibold text-gray-700 flex items-center gap-2">
+            <Thermometer className="w-4 h-4" />
+            Heat Risk
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="flex items-center justify-center h-32">
+          <div className="text-center space-y-2">
+            <Loader2 className="w-8 h-8 animate-spin text-gray-400 mx-auto" />
+            <div className="text-sm text-gray-500">
+              {deviceLoading && weatherLoading
+                ? 'Loading device & weather...'
+                : deviceLoading ? 'Loading device data...' : 'Loading weather data...'}
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    )
+  }
+
+  // Error state
+  if (deviceError && weatherError) {
+    return (
+      <Card className="backdrop-blur-sm border transition-all duration-300 shadow-lg hover:shadow-xl bg-red-50/50 border-red-200 h-full">
+        <CardHeader className="pb-2">
+          <CardTitle className="text-sm font-semibold text-gray-700 flex items-center gap-2">
+            <AlertTriangle className="w-4 h-4 text-red-500" />
+            Heat Risk
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="flex items-center justify-center h-32">
+          <div className="text-center space-y-2">
+            <AlertTriangle className="w-8 h-8 text-red-400 mx-auto" />
+            <div className="text-sm text-red-600">Data unavailable</div>
+          </div>
+        </CardContent>
+      </Card>
+    )
+  }
+
+  const deviceTemp = getDeviceTemperature()
+  const ambientTemp = getAmbientTemperature()
+  const cpuLoad = getCpuLoad()
+  const currentRisk = getRiskLevel(deviceTemp, ambientTemp, cpuLoad)
+  const riskValue = calculateRiskValue(deviceTemp, ambientTemp, cpuLoad)
+  const trend = getTrend(deviceTemp, riskValue)
   const riskConfig = getRiskConfig(currentRisk)
+
   const tempDiff = deviceTemp - ambientTemp
   const clampedRiskValue = Math.min(100, Math.max(0, riskValue))
 
@@ -96,7 +203,7 @@ export function HeatRiskMeter({
             <div className={riskConfig.textColor}>
               {riskConfig.icon}
             </div>
-            Heat Risk
+            Heat Risk Monitor
           </div>
           <div className="flex items-center gap-1">
             {getTrendIcon()}
@@ -108,7 +215,6 @@ export function HeatRiskMeter({
       </CardHeader>
 
       <CardContent className="space-y-4">
-        {/* Main Risk Display */}
         <div className="text-center space-y-1">
           <div className="text-3xl font-bold text-gray-900">
             {riskPercentage}
@@ -118,7 +224,6 @@ export function HeatRiskMeter({
           </Badge>
         </div>
 
-        {/* Risk Progress Bar */}
         <div className="space-y-2">
           <div className="flex justify-between text-xs text-gray-500">
             <span>Risk Level</span>
@@ -140,29 +245,52 @@ export function HeatRiskMeter({
           </div>
         </div>
 
-        {/* Temperature Stats */}
         <div className="grid grid-cols-2 gap-3 pt-2 border-t border-gray-200">
           <div className="text-center space-y-1">
             <div className="text-lg font-bold text-gray-900">
               {deviceTempDisplay}
             </div>
-            <div className="text-xs text-gray-500">Device</div>
+            <div className="text-xs text-gray-500">
+              {deviceError ? 'Device (Est.)' : 'Device'}
+            </div>
           </div>
           <div className="text-center space-y-1">
             <div className="text-lg font-bold text-gray-900">
               {ambientTempDisplay}
             </div>
-            <div className="text-xs text-gray-500">Ambient</div>
+            <div className="text-xs text-gray-500">
+              {weatherError ? 'Ambient (Est.)' : 'Outdoor'}
+            </div>
           </div>
         </div>
 
-        {/* Temperature Difference */}
-        <div className={`text-center py-2 px-3 rounded-lg ${riskConfig.bgClass} border ${riskConfig.borderClass}`}>
-          <div className="text-sm font-medium text-gray-700">
-            <span className="text-gray-500">Temp Diff: </span>
-            <span className={`font-bold ${riskConfig.textColor}`}>
-              {tempDiffDisplay}
-            </span>
+        <div className="space-y-2">
+          <div className={`text-center py-2 px-3 rounded-lg ${riskConfig.bgClass} border ${riskConfig.borderClass}`}>
+            <div className="text-sm font-medium text-gray-700">
+              <span className="text-gray-500">Temp Diff: </span>
+              <span className={`font-bold ${riskConfig.textColor}`}>
+                {tempDiffDisplay}
+              </span>
+            </div>
+          </div>
+
+          {cpuLoad !== undefined && (
+            <div className="text-center py-1">
+              <div className="text-xs text-gray-500">
+                CPU Load:
+                {' '}
+                <span className="font-medium text-gray-700">
+                  {cpuLoad.toFixed(1)}
+                  %
+                </span>
+              </div>
+            </div>
+          )}
+
+          <div className="text-center">
+            <div className="text-xs text-gray-600 italic">
+              {riskConfig.recommendation}
+            </div>
           </div>
         </div>
       </CardContent>
