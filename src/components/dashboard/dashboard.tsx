@@ -2,6 +2,7 @@
 
 import type { DashboardPage } from './sidebar-navigation'
 import React, { useEffect, useState } from 'react'
+import { LocationProvider } from '@/contexts/location-context'
 import { QueryProvider } from '@/providers/query-provider'
 import { BlueprintGrid } from './blueprint-grid'
 import { BatteryCard } from './cards/battery-card'
@@ -332,7 +333,9 @@ function DashboardContent() {
 export default function Dashboard() {
   return (
     <QueryProvider>
-      <DashboardContent />
+      <LocationProvider>
+        <DashboardContent />
+      </LocationProvider>
     </QueryProvider>
   )
 }

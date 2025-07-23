@@ -53,7 +53,6 @@ export function WeatherLocationPanel({
       }
       catch (err) {
         console.error('Failed to update location:', err)
-        // Error will be shown via the error state from useWeather hook
       }
     }
   }

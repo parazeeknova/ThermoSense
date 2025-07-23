@@ -20,6 +20,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart'
+import { useLocationContext } from '@/contexts/location-context'
 import { useHistoricalData } from '@/hooks/use-historical-data'
 import { useWeather } from '@/hooks/use-weather'
 
@@ -39,14 +40,21 @@ export function HistoricalDataPanel() {
   const [showRawData, setShowRawData] = useState(false)
 
   const { weatherData } = useWeather()
+  const { currentLocation: globalLocation, coordinates: globalCoordinates } = useLocationContext()
 
-  const currentLocation = weatherData
+  const currentLocation = globalLocation && globalCoordinates
     ? {
-        lat: weatherData.coordinates?.lat || 0,
-        lng: weatherData.coordinates?.lng || 0,
-        city: weatherData.location,
+        lat: globalCoordinates.lat,
+        lng: globalCoordinates.lon,
+        city: globalLocation,
       }
-    : undefined
+    : weatherData
+      ? {
+          lat: weatherData.coordinates?.lat || 0,
+          lng: weatherData.coordinates?.lng || 0,
+          city: weatherData.location,
+        }
+      : undefined
 
   const { data: historicalResponse, isLoading, error, refetch } = useHistoricalData(timeRange, 30, currentLocation)
 

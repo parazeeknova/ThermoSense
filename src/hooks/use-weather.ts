@@ -1,16 +1,14 @@
 import type { WeatherData } from '@/types/dashboard'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useLocationContext } from '@/contexts/location-context'
 import { WeatherService } from '@/lib/weather-service'
 
-// Query keys for React Query
 export const weatherKeys = {
   all: ['weather'] as const,
   byLocation: (location: string) => [...weatherKeys.all, 'location', location] as const,
   byCoords: (lat: number, lon: number) => [...weatherKeys.all, 'coords', lat, lon] as const,
   history: ['weather', 'history'] as const,
 }
-
-const DEFAULT_LOCATION = 'Bhopal'
 
 export interface WeatherDataWithTrend extends WeatherData {
   temperatureTrend?: number
@@ -62,7 +60,7 @@ function calculateTemperatureTrend(currentTemp: number, location: string): numbe
 }
 
 // Hook for getting weather by location
-export function useWeatherByLocation(location: string = DEFAULT_LOCATION) {
+export function useWeatherByLocation(location: string) {
   return useQuery({
     queryKey: weatherKeys.byLocation(location),
     queryFn: async (): Promise<WeatherDataWithTrend> => {
@@ -113,6 +111,7 @@ export function useWeatherByCoords(lat?: number, lon?: number) {
 // Hook for changing location with mutation
 export function useLocationMutation() {
   const queryClient = useQueryClient()
+  const { updateGlobalLocation } = useLocationContext()
 
   return useMutation({
     mutationFn: async (location: string): Promise<{ data: WeatherDataWithTrend, location: string }> => {
@@ -133,8 +132,22 @@ export function useLocationMutation() {
       return { data: enhancedData, location }
     },
     onSuccess: ({ data, location }) => {
+      updateGlobalLocation(location)
+
       queryClient.setQueryData(weatherKeys.byLocation(location), data)
+
       queryClient.invalidateQueries({ queryKey: weatherKeys.all })
+
+      queryClient.removeQueries({
+        queryKey: weatherKeys.all,
+        predicate: (query) => {
+          const queryKey = query.queryKey
+          if (queryKey.length >= 3 && queryKey[1] === 'location' && queryKey[2] !== location) {
+            return true
+          }
+          return false
+        },
+      })
     },
     onError: (error) => {
       console.error('Location change failed:', error)
@@ -145,6 +158,7 @@ export function useLocationMutation() {
 // Hook for auto-location with mutation
 export function useAutoLocationMutation() {
   const queryClient = useQueryClient()
+  const { updateGlobalLocation, setCoordinates } = useLocationContext()
 
   return useMutation({
     mutationFn: async (): Promise<{ data: WeatherDataWithTrend, coords: { lat: number, lon: number } }> => {
@@ -166,10 +180,14 @@ export function useAutoLocationMutation() {
       return { data: enhancedData, coords }
     },
     onSuccess: ({ data, coords }) => {
+      updateGlobalLocation(data.location)
+      setCoordinates(coords)
+
       queryClient.setQueryData(weatherKeys.byCoords(coords.lat, coords.lon), data)
       if (data.location) {
         queryClient.setQueryData(weatherKeys.byLocation(data.location), data)
       }
+
       queryClient.invalidateQueries({ queryKey: weatherKeys.all })
     },
     onError: (error) => {
@@ -178,9 +196,17 @@ export function useAutoLocationMutation() {
   })
 }
 
-// Main weather hook that provides a unified interface
-export function useWeather(initialLocation: string = DEFAULT_LOCATION) {
-  const locationQuery = useWeatherByLocation(initialLocation)
+// Main weather hook that provides a unified interface using global location state
+export function useWeather() {
+  const { currentLocation, coordinates } = useLocationContext()
+
+  // Use coordinates if available, otherwise use location name
+  const locationQuery = useWeatherByLocation(currentLocation)
+  const coordsQuery = useWeatherByCoords(coordinates?.lat, coordinates?.lon)
+
+  // Prefer coordinates data if available and enabled
+  const activeQuery = coordinates ? coordsQuery : locationQuery
+
   const locationMutation = useLocationMutation()
   const autoLocationMutation = useAutoLocationMutation()
 
@@ -193,23 +219,30 @@ export function useWeather(initialLocation: string = DEFAULT_LOCATION) {
   }
 
   const refreshWeather = () => {
-    locationQuery.refetch()
+    activeQuery.refetch()
   }
 
   return {
-    weatherData: locationQuery.data,
+    weatherData: activeQuery.data,
+    currentLocation,
+    coordinates,
 
-    isLoading: locationQuery.isLoading || locationQuery.isFetching,
+    isLoading: activeQuery.isLoading || activeQuery.isFetching,
     isUpdatingLocation: locationMutation.isPending,
     isAutoLocating: autoLocationMutation.isPending,
 
-    error: locationQuery.error || locationMutation.error || autoLocationMutation.error,
+    error: activeQuery.error || locationMutation.error || autoLocationMutation.error,
 
     updateLocation,
     autoLocate,
     refreshWeather,
 
-    isSuccess: locationQuery.isSuccess,
-    isError: locationQuery.isError,
+    isSuccess: activeQuery.isSuccess,
+    isError: activeQuery.isError,
   }
+}
+
+// Legacy hooks for backwards compatibility
+export function useWeatherByLocationLegacy(location: string = 'Bhopal') {
+  return useWeatherByLocation(location)
 }
