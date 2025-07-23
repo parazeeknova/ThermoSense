@@ -5,8 +5,11 @@ import React from 'react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Progress } from '@/components/ui/progress'
+import { useLocationContext } from '@/contexts/location-context'
 import { useDeviceInfo } from '@/hooks/use-device-info'
+import { useHistoricalData } from '@/hooks/use-historical-data'
 import { useSystemStatus } from '@/hooks/use-system-status'
+import { useWeather } from '@/hooks/use-weather'
 
 export type DashboardPage = 'monitoring' | 'analytics'
 
@@ -50,6 +53,168 @@ export function SidebarNavigation({
 }: SidebarNavigationProps) {
   const { data: deviceInfo } = useDeviceInfo()
   const { health, connection, lastSync } = useSystemStatus()
+  const { weatherData } = useWeather()
+  const { currentLocation, coordinates } = useLocationContext()
+
+  // Helper functions for data analysis
+  const calculateCorrelation = (x: number[], y: number[]): number | null => {
+    if (x.length !== y.length || x.length < 2)
+      return null
+
+    const n = x.length
+    const sumX = x.reduce((a, b) => a + b, 0)
+    const sumY = y.reduce((a, b) => a + b, 0)
+    const sumXY = x.reduce((sum, xi, i) => sum + xi * y[i], 0)
+    const sumX2 = x.reduce((sum, xi) => sum + xi * xi, 0)
+    const sumY2 = y.reduce((sum, yi) => sum + yi * yi, 0)
+
+    const numerator = n * sumXY - sumX * sumY
+    const denominator = Math.sqrt((n * sumX2 - sumX * sumX) * (n * sumY2 - sumY * sumY))
+
+    return denominator === 0 ? null : numerator / denominator
+  }
+
+  const calculateTrend = (values: number[]): { slope: number, direction: 'increasing' | 'decreasing' | 'stable' } | null => {
+    if (values.length < 2)
+      return null
+
+    const n = values.length
+    const indices = Array.from({ length: n }, (_, i) => i)
+    const correlation = calculateCorrelation(indices, values)
+
+    if (correlation === null)
+      return null
+
+    const slope = correlation * (Math.sqrt(values.reduce((sum, v) => sum + v * v, 0) / n) / Math.sqrt(indices.reduce((sum, i) => sum + i * i, 0) / n))
+
+    return {
+      slope,
+      direction: Math.abs(slope) < 0.1 ? 'stable' : slope > 0 ? 'increasing' : 'decreasing',
+    }
+  }
+
+  const assessRisk = (readings: any[]): { level: 'low' | 'medium' | 'high', factors: string[] } => {
+    if (readings.length === 0)
+      return { level: 'low', factors: [] }
+
+    const latest = readings[readings.length - 1]
+    const maxTempDiff = Math.max(...readings.map(r => r.batteryTemp - r.ambientTemp))
+
+    const factors = []
+    let riskScore = 0
+
+    if (latest.batteryTemp > 60) {
+      factors.push('High device temperature')
+      riskScore += 2
+    }
+
+    if (maxTempDiff > 30) {
+      factors.push('High temperature differential')
+      riskScore += 2
+    }
+
+    if (latest.batteryHealth < 80) {
+      factors.push('Declining battery health')
+      riskScore += 1
+    }
+
+    if (latest.cpuLoad > 80) {
+      factors.push('High CPU load')
+      riskScore += 1
+    }
+
+    const level = riskScore >= 4 ? 'high' : riskScore >= 2 ? 'medium' : 'low'
+
+    return { level, factors }
+  }
+
+  // Get historical data for export
+  const { data: historicalResponse } = useHistoricalData(
+    '24hours',
+    100,
+    currentLocation && coordinates
+      ? {
+          lat: coordinates.lat,
+          lng: coordinates.lon,
+          city: currentLocation,
+        }
+      : undefined,
+  )
+
+  // Export data functionality
+  const exportData = () => {
+    const exportTimestamp = new Date().toISOString()
+
+    const exportDataObj = {
+      metadata: {
+        exportedAt: exportTimestamp,
+        applicationVersion: 'ThermoSense v1.0',
+        exportType: 'complete_system_data',
+        description: 'Complete system data export including device information, historical readings, weather data, and system status',
+      },
+      deviceInfo: {
+        temperature: deviceInfo?.temperature || null,
+        battery: deviceInfo?.battery || null,
+        cpu: deviceInfo?.cpu || null,
+        load: deviceInfo?.load || null,
+        timestamp: deviceInfo?.timestamp || null,
+      },
+      weatherData: weatherData
+        ? {
+            temperature: weatherData.temperature,
+            humidity: weatherData.humidity,
+            windSpeed: weatherData.windSpeed,
+            condition: weatherData.condition,
+            uvIndex: weatherData.uvIndex,
+            location: weatherData.location,
+            coordinates: weatherData.coordinates,
+            lastUpdated: weatherData.lastUpdated,
+          }
+        : null,
+      location: currentLocation && coordinates
+        ? {
+            city: currentLocation,
+            coordinates: {
+              lat: coordinates.lat,
+              lng: coordinates.lon,
+            },
+          }
+        : null,
+      historicalData: {
+        summary: historicalResponse?.summary || null,
+        totalReadings: historicalResponse?.totalReadings || 0,
+        timeRange: historicalResponse?.timeRange || '24hours',
+        latestReading: historicalResponse?.latestReading || null,
+        readings: historicalResponse?.data || [],
+        isRealData: historicalResponse?.isRealData || false,
+      },
+      systemStatus: {
+        health,
+        connection,
+        lastSync,
+      },
+      correlationAnalysis: historicalResponse?.data && historicalResponse.data.length > 0
+        ? {
+            deviceAmbientCorrelation: calculateCorrelation(
+              historicalResponse.data.map(r => r.batteryTemp),
+              historicalResponse.data.map(r => r.ambientTemp),
+            ),
+            batteryHealthTrend: calculateTrend(historicalResponse.data.map(r => r.batteryHealth)),
+            temperatureTrend: calculateTrend(historicalResponse.data.map(r => r.batteryTemp)),
+            riskAssessment: assessRisk(historicalResponse.data),
+          }
+        : null,
+    }
+
+    const jsonString = JSON.stringify(exportDataObj, null, 2)
+    const blob = new Blob([jsonString], { type: 'application/json' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `thermosense-export-${new Date().toISOString().split('T')[0]}-${new Date().toTimeString().split(' ')[0].replace(/:/g, '')}.json`
+    a.click()
+    URL.revokeObjectURL(url)
+  }
 
   const handlePageChange = (page: DashboardPage) => {
     if (page !== currentPage) {
@@ -343,6 +508,7 @@ export function SidebarNavigation({
           size="sm"
           className={`w-full ${isCollapsed ? 'px-2' : 'justify-start'}`}
           title={isCollapsed ? 'Export Data' : undefined}
+          onClick={exportData}
         >
           <BarChart3 className="w-4 h-4 mr-2 flex-shrink-0" />
           {!isCollapsed && <span className="truncate">Export Data</span>}
