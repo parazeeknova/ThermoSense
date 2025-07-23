@@ -1,23 +1,13 @@
 'use client'
 
 import type { WeatherData } from '@/types/dashboard'
-import { Cloud, CloudRain, Droplets, Eye, MapPin, Navigation, RefreshCw, Sun, Thermometer, Wind } from 'lucide-react'
-import React, { useState } from 'react'
+import { AlertCircle, Cloud, CloudRain, Droplets, Eye, MapPin, Navigation, RefreshCw, Sun, Thermometer, Wind } from 'lucide-react'
+import React, { useEffect, useState } from 'react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Progress } from '@/components/ui/progress'
-
-// Mock weather data - replace with actual weather API
-const mockWeatherData: WeatherData = {
-  temperature: 28.5,
-  humidity: 65,
-  windSpeed: 12.5,
-  condition: 'Partly Cloudy',
-  uvIndex: 6,
-  location: 'San Francisco, CA',
-  lastUpdated: new Date().toISOString(),
-}
+import { WeatherService } from '@/lib/weather-service'
 
 const weatherConditions = {
   'Clear': { icon: <Sun className="w-6 h-6 text-yellow-500" />, color: 'text-yellow-600', bg: 'bg-yellow-50' },
@@ -27,33 +17,86 @@ const weatherConditions = {
 }
 
 interface WeatherLocationPanelProps {
-  weatherData?: WeatherData
   onRefresh?: () => void
   onLocationChange?: (location: string) => void
+  defaultLocation?: string
 }
 
 export function WeatherLocationPanel({
-  weatherData = mockWeatherData,
   onRefresh,
   onLocationChange,
+  defaultLocation = 'Bhopal',
 }: WeatherLocationPanelProps) {
+  const [weatherData, setWeatherData] = useState<WeatherData | null>(null)
+  const [isLoading, setIsLoading] = useState(true)
   const [isRefreshing, setIsRefreshing] = useState(false)
+  const [error, setError] = useState<string | null>(null)
   const [showLocationInput, setShowLocationInput] = useState(false)
   const [newLocation, setNewLocation] = useState('')
+  const [currentLocation, setCurrentLocation] = useState(defaultLocation)
+
+  const fetchWeatherData = async (location: string) => {
+    try {
+      setError(null)
+      const data = await WeatherService.getCurrentWeather(location)
+      setWeatherData(data)
+      setCurrentLocation(location)
+    }
+    catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to fetch weather data'
+      setError(errorMessage)
+      console.error('Weather fetch error:', err)
+    }
+  }
+
+  const fetchWeatherByLocation = async () => {
+    try {
+      setError(null)
+      const coords = await WeatherService.getCurrentLocation()
+      const data = await WeatherService.getWeatherByCoordinates(coords.lat, coords.lon)
+      setWeatherData(data)
+      setCurrentLocation(data.location)
+    }
+    catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to get current location'
+      setError(errorMessage)
+      // Fallback to default location
+      await fetchWeatherData(defaultLocation)
+    }
+  }
+
+  useEffect(() => {
+    const loadInitialWeather = async () => {
+      setIsLoading(true)
+      await fetchWeatherData(currentLocation)
+      setIsLoading(false)
+    }
+    loadInitialWeather()
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   const handleRefresh = async () => {
     setIsRefreshing(true)
-    await new Promise(resolve => setTimeout(resolve, 1500))
+    await fetchWeatherData(currentLocation)
     onRefresh?.()
     setIsRefreshing(false)
   }
 
-  const handleLocationUpdate = () => {
+  const handleLocationUpdate = async () => {
     if (newLocation.trim()) {
+      setIsLoading(true)
+      await fetchWeatherData(newLocation.trim())
       onLocationChange?.(newLocation.trim())
       setShowLocationInput(false)
       setNewLocation('')
+      setIsLoading(false)
     }
+  }
+
+  const handleAutoLocate = async () => {
+    setIsLoading(true)
+    await fetchWeatherByLocation()
+    setIsLoading(false)
   }
 
   const getUVIndexColor = (uvIndex: number) => {
@@ -89,6 +132,57 @@ export function WeatherLocationPanel({
       return { label: 'High', color: 'text-yellow-500', description: 'Humid' }
     return { label: 'Very High', color: 'text-red-500', description: 'Very humid' }
   }
+
+  if (isLoading) {
+    return (
+      <Card className="bg-white/95 backdrop-blur-sm border-gray-200/50 hover:bg-white transition-all duration-300 shadow-lg hover:shadow-xl">
+        <CardHeader className="pb-4">
+          <CardTitle className="text-lg font-bold text-gray-900 flex items-center">
+            <MapPin className="w-5 h-5 mr-2 text-emerald-600" />
+            Weather & Location
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex items-center justify-center py-8">
+            <RefreshCw className="w-8 h-8 animate-spin text-emerald-600" />
+            <span className="ml-2 text-gray-600">Loading weather data...</span>
+          </div>
+        </CardContent>
+      </Card>
+    )
+  }
+
+  if (error && !weatherData) {
+    return (
+      <Card className="bg-white/95 backdrop-blur-sm border-gray-200/50 hover:bg-white transition-all duration-300 shadow-lg hover:shadow-xl">
+        <CardHeader className="pb-4">
+          <CardTitle className="text-lg font-bold text-gray-900 flex items-center">
+            <MapPin className="w-5 h-5 mr-2 text-emerald-600" />
+            Weather & Location
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex items-center justify-center py-8 text-red-600">
+            <AlertCircle className="w-6 h-6 mr-2" />
+            <div className="text-center">
+              <div className="font-medium">Weather data unavailable</div>
+              <div className="text-sm text-gray-600 mt-1">{error}</div>
+              <Button
+                onClick={() => fetchWeatherData(currentLocation)}
+                className="mt-4"
+                variant="outline"
+              >
+                Try Again
+              </Button>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    )
+  }
+
+  if (!weatherData)
+    return null
 
   const weatherCondition = weatherConditions[weatherData.condition as keyof typeof weatherConditions] || weatherConditions.Clear
   const humidityStatus = getHumidityStatus(weatherData.humidity)
@@ -128,6 +222,12 @@ export function WeatherLocationPanel({
           </div>
         </CardTitle>
         <p className="text-sm text-gray-600">Current conditions affecting your device thermal state</p>
+        {error && (
+          <div className="mt-2 p-2 bg-yellow-50 border border-yellow-200 rounded text-yellow-800 text-sm">
+            <AlertCircle className="w-4 h-4 inline mr-1" />
+            {error}
+          </div>
+        )}
       </CardHeader>
 
       <CardContent className="space-y-6">
@@ -136,7 +236,7 @@ export function WeatherLocationPanel({
             <div className="flex space-x-2">
               <input
                 type="text"
-                placeholder="Enter city name or coordinates"
+                placeholder="Enter city (e.g., London, Tokyo, Paris)"
                 value={newLocation}
                 onChange={e => setNewLocation(e.target.value)}
                 onKeyDown={e => e.key === 'Enter' && handleLocationUpdate()}
@@ -159,12 +259,13 @@ export function WeatherLocationPanel({
               <div className="font-medium text-gray-900">{weatherData.location}</div>
               <div className="text-sm text-gray-600">
                 Updated:
+                {' '}
                 {lastUpdated}
               </div>
             </div>
           </div>
           <Badge variant="outline" className="text-emerald-600 border-emerald-200">
-            Current
+            Live Data
           </Badge>
         </div>
 
@@ -280,7 +381,13 @@ export function WeatherLocationPanel({
         </div>
 
         <div className="flex space-x-2">
-          <Button variant="outline" size="sm" className="flex-1">
+          <Button
+            variant="outline"
+            size="sm"
+            className="flex-1"
+            onClick={handleAutoLocate}
+            disabled={isLoading}
+          >
             <MapPin className="w-4 h-4 mr-1" />
             Auto-locate
           </Button>
