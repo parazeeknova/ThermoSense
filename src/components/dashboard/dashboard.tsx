@@ -214,7 +214,13 @@ function DashboardContent() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
-      <BlueprintGrid isDragging={!!draggedCard} />
+      <BlueprintGrid
+        isDragging={!!draggedCard}
+        dragPosition={draggedCard ? { x: 0, y: 0 } : undefined}
+        snapToGrid={true}
+        gridSize={40}
+        showMeasurements={true}
+      />
 
       {isMobile && sidebarVisible && (
         <div
