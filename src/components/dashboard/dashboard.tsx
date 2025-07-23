@@ -3,6 +3,8 @@
 import type { DashboardPage } from './sidebar-navigation'
 import React, { useEffect, useState } from 'react'
 import { LocationProvider } from '@/contexts/location-context'
+import { useDeviceInfo } from '@/hooks/use-device-info'
+import { useWeather } from '@/hooks/use-weather'
 import { QueryProvider } from '@/providers/query-provider'
 import { BlueprintGrid } from './blueprint-grid'
 import { BatteryCard } from './cards/battery-card'
@@ -59,6 +61,16 @@ function DashboardContent() {
   const [sidebarVisible, setSidebarVisible] = useState(false)
   const [monitoringCardOrder, setMonitoringCardOrder] = useState(pageCards.monitoring)
   const [analyticsCardOrder, setAnalyticsCardOrder] = useState(pageCards.analytics)
+
+  // Get device and weather data for AI components
+  const { data: deviceInfo } = useDeviceInfo()
+  const { weatherData } = useWeather()
+  const deviceTemp = deviceInfo?.temperature?.cpu
+  const batteryLevel = deviceInfo?.battery?.percent
+  const weatherTemp = weatherData?.temperature
+  const cpuUsage = deviceInfo?.load?.currentLoad
+  const screenBrightness = 50 // Placeholder since system.screenBrightness doesn't exist - TODO
+  const activeApps = 5 // Placeholder since system.activeProcesses doesn't exist - TODO
 
   useEffect(() => {
     const checkScreenSize = () => {
@@ -168,11 +180,29 @@ function DashboardContent() {
       case 'heat-risk-meter':
         return <HeatRiskMeter />
       case 'notification-center':
-        return <NotificationCenter />
+        return (
+          <NotificationCenter
+            deviceTemp={deviceTemp || undefined}
+            batteryLevel={batteryLevel}
+            weatherTemp={weatherTemp}
+            cpuUsage={cpuUsage}
+            screenBrightness={screenBrightness}
+            activeApps={activeApps}
+          />
+        )
       case 'weather-location':
         return <WeatherLocationPanel />
       case 'predictive-analytics':
-        return <PredictiveAnalyticsPanel />
+        return (
+          <PredictiveAnalyticsPanel
+            deviceTemp={deviceTemp || undefined}
+            batteryLevel={batteryLevel}
+            weatherTemp={weatherTemp}
+            cpuUsage={cpuUsage}
+            screenBrightness={screenBrightness}
+            activeApps={activeApps}
+          />
+        )
       case 'historical-data':
         return <HistoricalDataPanel />
       case 'device-config':

@@ -12,6 +12,10 @@ export const env = createEnv({
     NODE_ENV: z
       .enum(['development', 'test', 'production'])
       .default('development'),
+    GEMINI_API_KEY: z
+      .string()
+      .min(1, 'Gemini API key is required for AI features')
+      .describe('Gemini API key for AI models (server-side only)'),
   },
 
   /**
@@ -34,6 +38,7 @@ export const env = createEnv({
   runtimeEnv: {
     NODE_ENV: process.env.NODE_ENV,
     NEXT_PUBLIC_OPENWEATHER_API_KEY: process.env.NEXT_PUBLIC_OPENWEATHER_API_KEY,
+    GEMINI_API_KEY: process.env.GEMINI_API_KEY,
   },
   /**
    * Run `build` or `dev` with SKIP_ENV_VALIDATION to skip env validation. This is especially
@@ -46,3 +51,8 @@ export const env = createEnv({
    */
   emptyStringAsUndefined: true,
 })
+
+// Validate Gemini API key availability
+if (!process.env.GEMINI_API_KEY && process.env.NODE_ENV === 'production') {
+  console.error('Missing GEMINI_API_KEY environment variable in production')
+}
