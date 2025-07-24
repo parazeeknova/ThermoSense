@@ -15,6 +15,8 @@
 
 > An intelligent thermal management system that helps users understand how ambient weather affects their device's thermal state, predict overheating risks, and take preventive actions through AI-powered insights.
 
+> [!NOTE]
+>  The reason this project isn't deployed is because it requires access to local system information and battery details. Hosting it on Vercel would consume edge requests and function invocations. On the other hand, self-hosting it on my VPS would only show the weather, since VPS machines don't have batteries and both Vercel and VPS environments are typically restrictive about exposing system-level details, likely due to their use of virtualization platforms like Proxmox.
 
 ## Project Overview
 
