@@ -90,6 +90,12 @@ const weights = {
 }
 ```
 
+## Screenshots
+
+| Dashboard Overview | Analytics | More Analytics | Draggable Cards |
+|:------------------:|:---------:|:--------------:|:--------------:|
+| ![Dashboard](./assets/dashboard.png) | ![Analytics](./assets/analytics.png) | ![Analytics More](./assets/analytics-more.png) | ![Draggable](./assets/draggable.png) |
+
 ### 1. Real-Time Device Monitoring Hook
 This React hook serves as the backbone for continuous device hardware monitoring in the ThermoSense application. The `useDeviceInfo` function leverages TanStack Query to automatically fetch device information every 2 seconds, ensuring users receive real-time updates on CPU temperature, battery status, and system load. The hook implements sophisticated caching strategies with configurable stale time and garbage collection periods to optimize performance while maintaining data freshness. It includes robust error handling with exponential backoff retry logic, attempting up to 3 retries with increasing delays to handle temporary network issues gracefully. Additionally, the hook coordinates with other data sources through cache invalidation, automatically triggering updates to historical data when new device information arrives, ensuring all dashboard components remain synchronized.
 
