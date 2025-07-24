@@ -20,6 +20,28 @@
 
 ThermoSense is **ambient-aware battery health advisor** that bridges the gap between environmental conditions and device thermal management. The application provides real-time monitoring, predictive analytics, and AI-powered recommendations to optimize device performance and battery longevity.
 
+## Features
+- **Real-Time Device Monitoring:**
+Continuously tracks CPU temperature, battery status, and system load, updating every 2 seconds for instant feedback.
+- **Ambient-Aware Analytics:**
+Integrates live weather data to correlate environmental conditions with device thermal state.
+- **Advanced Heat Risk Assessment:**
+Uses a weighted scoring algorithm to evaluate overheating risk, factoring in device and ambient temperatures, CPU load, humidity, and time of day.
+- **AI-Powered Recommendations:**
+Leverages Google Gemini AI to provide actionable, context-aware tips for thermal management, battery health, and performance optimization.
+- **Predictive Analytics:**
+Forecasts future device temperature trends and risk levels, helping users take proactive measures.
+- **Customizable Dashboard:**
+Modular, drag-and-drop interface lets users personalize their monitoring and analytics layout.
+- **Historical Data Visualization:**
+Displays trends and patterns over time, enabling users to analyze past device performance and environmental impacts.
+- **Notification Center:**
+Centralized hub for AI recommendations, alerts, and actionable insights.
+- **Responsive & Modern UI:**
+Built with React, Next.js, and Tailwind CSS for a seamless experience across devices.
+- **Easy Deployment:**
+Docker-ready and simple to configure for local or cloud hosting.
+
 ## Setup & Installation
 
 ### Prerequisites
