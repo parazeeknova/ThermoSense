@@ -3,6 +3,8 @@
 import type { NextRequest } from 'next/server'
 import { NextResponse } from 'next/server'
 
+export const dynamic = 'force-dynamic'
+
 interface HistoricalReading {
   timestamp: string
   deviceTemp: number
@@ -23,18 +25,9 @@ let historicalData: HistoricalReading[] = []
 let lastDataCollection = 0
 const COLLECTION_INTERVAL = 2 * 60 * 1000 // every 2 minutes
 
-// Function to get current device info from our existing API
+// Function to get current device info using systeminformation directly
 async function getCurrentDeviceInfo() {
   try {
-    const response = await fetch(`${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/api/device/info`)
-    if (!response.ok) {
-      throw new Error('Failed to fetch device info')
-    }
-    return await response.json()
-  }
-  catch (error) {
-    console.error('Error fetching device info from API:', error)
-    // Fallback to direct systeminformation if internal API fails
     const si = await import('systeminformation')
     const [cpuTemp, battery, currentLoad] = await Promise.all([
       si.cpuTemperature(),
@@ -58,6 +51,10 @@ async function getCurrentDeviceInfo() {
       },
       timestamp: new Date().toISOString(),
     }
+  }
+  catch (error) {
+    console.error('Error fetching device info:', error)
+    throw error
   }
 }
 

@@ -28,7 +28,7 @@ export const systemStatusKeys = {
 
 async function fetchSystemHealth(): Promise<SystemHealth> {
   try {
-    const response = await fetch('/api/device/info', {
+    const response = await fetch('/api/trpc/device.getInfo', {
       method: 'HEAD',
       signal: AbortSignal.timeout(3000),
     })

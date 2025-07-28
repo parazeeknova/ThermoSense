@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Progress } from '@/components/ui/progress'
-import { useDeviceInfo } from '@/hooks/use-device-info'
+import { useDeviceInfo } from '@/hooks/use-device-info-trpc'
 import { useSystemStatus } from '@/hooks/use-system-status'
 
 interface DeviceConfig {

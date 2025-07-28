@@ -22,7 +22,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart'
 import { useLocationContext } from '@/contexts/location-context'
 import { useHistoricalData } from '@/hooks/use-historical-data'
-import { useWeather } from '@/hooks/use-weather'
+import { useWeather } from '@/hooks/use-weather-trpc'
 
 const chartConfig = {
   batteryTemp: { label: 'Device Temp', color: '#EF4444' },

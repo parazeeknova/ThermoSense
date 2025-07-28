@@ -1,0 +1,26 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "target": "es2020",
+    "rootDir": "./",
+    "module": "commonjs",
+    "moduleResolution": "node",
+    "strict": true,
+    "outDir": "./dist",
+    "allowSyntheticDefaultImports": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true
+  },
+  "include": [
+    "main.ts",
+    "preload.ts",
+    "src/lib/electron-utils.ts"
+  ],
+  "exclude": [
+    "node_modules",
+    "dist",
+    "out",
+    "src/app",
+    "src/components"
+  ]
+}

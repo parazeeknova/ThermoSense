@@ -5,8 +5,8 @@ import { AlertTriangle, Droplets, Info, Loader2, Minus, Thermometer, TrendingDow
 import { useEffect, useMemo, useState } from 'react'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { useDeviceInfo } from '@/hooks/use-device-info'
-import { useWeather } from '@/hooks/use-weather'
+import { useDeviceInfo } from '@/hooks/use-device-info-trpc'
+import { useWeather } from '@/hooks/use-weather-trpc'
 
 interface TemperatureHistory {
   timestamp: number
@@ -170,7 +170,7 @@ export function HeatRiskMeter() {
     return { ...config, recommendation }
   }
 
-  const getTemperatureData = () => {
+  const temperatureData = useMemo(() => {
     const deviceTemp = deviceInfo?.temperature?.cpu
       || (deviceInfo?.temperature?.cores?.reduce((sum, temp) => sum + temp, 0) || 0) / (deviceInfo?.temperature?.cores?.length || 1)
       || deviceInfo?.temperature?.max || 45
@@ -180,15 +180,29 @@ export function HeatRiskMeter() {
     const humidity = weatherData?.humidity || 50
 
     return { deviceTemp, ambientTemp, cpuLoad, humidity }
-  }
+  }, [
+    deviceInfo?.temperature?.cpu,
+    deviceInfo?.temperature?.max,
+    deviceInfo?.load?.currentLoad,
+    weatherData?.temperature,
+    weatherData?.humidity,
+    // Stringify cores array to avoid reference changes
+    JSON.stringify(deviceInfo?.temperature?.cores),
+  ])
 
-  // Update temperature history
+  // Update temperature history with throttling
   useEffect(() => {
-    if (deviceInfo && weatherData) {
-      const { deviceTemp, ambientTemp, cpuLoad } = getTemperatureData()
+    if (deviceInfo && weatherData && temperatureData) {
+      const { deviceTemp, ambientTemp, cpuLoad } = temperatureData
       const now = Date.now()
 
+      // Throttle updates to prevent infinite loops - only update every 5 seconds
       setTemperatureHistory((prev) => {
+        const lastEntry = prev[prev.length - 1]
+        if (lastEntry && now - lastEntry.timestamp < 5000) {
+          return prev // Don't update if less than 5 seconds have passed
+        }
+
         const newEntry: TemperatureHistory = {
           timestamp: now,
           temperature: deviceTemp,
@@ -201,11 +215,11 @@ export function HeatRiskMeter() {
         return updated
       })
     }
-  }, [deviceInfo, weatherData])
+  }, [deviceInfo?.timestamp, weatherData?.lastUpdated]) // Only depend on timestamps
 
   useEffect(() => {
-    if (deviceInfo && weatherData) {
-      const { deviceTemp, ambientTemp, cpuLoad, humidity } = getTemperatureData()
+    if (deviceInfo && weatherData && temperatureData) {
+      const { deviceTemp, ambientTemp, cpuLoad, humidity } = temperatureData
       const { value } = calculateAdvancedRisk(deviceTemp, ambientTemp, cpuLoad, temperatureHistory, humidity)
 
       const interval = setInterval(() => {
@@ -219,15 +233,15 @@ export function HeatRiskMeter() {
 
       return () => clearInterval(interval)
     }
-  }, [deviceInfo, weatherData, temperatureHistory])
+  }, [deviceInfo?.timestamp, weatherData?.lastUpdated, temperatureHistory.length]) // Only depend on timestamps and history length
 
   const currentData = useMemo(() => {
     if (!deviceInfo && !weatherData)
       return null
 
-    const { deviceTemp, ambientTemp, cpuLoad, humidity } = getTemperatureData()
+    const { deviceTemp, ambientTemp, cpuLoad, humidity } = temperatureData
     return calculateAdvancedRisk(deviceTemp, ambientTemp, cpuLoad, temperatureHistory, humidity)
-  }, [deviceInfo, weatherData, temperatureHistory])
+  }, [deviceInfo?.timestamp, weatherData?.lastUpdated, temperatureHistory.length, temperatureData])
 
   const getTrendIndicator = () => {
     if (temperatureHistory.length < 3)
@@ -302,7 +316,7 @@ export function HeatRiskMeter() {
     return null
 
   const { risk, value, breakdown, prediction } = currentData
-  const { deviceTemp, ambientTemp, cpuLoad, humidity } = getTemperatureData()
+  const { deviceTemp, ambientTemp, cpuLoad, humidity } = temperatureData
   const riskConfig = getRiskConfig(risk, value)
   const trendIndicator = getTrendIndicator()
   const tempDiff = deviceTemp - ambientTemp

@@ -6,10 +6,10 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Progress } from '@/components/ui/progress'
 import { useLocationContext } from '@/contexts/location-context'
-import { useDeviceInfo } from '@/hooks/use-device-info'
+import { useDeviceInfo } from '@/hooks/use-device-info-trpc'
 import { useHistoricalData } from '@/hooks/use-historical-data'
 import { useSystemStatus } from '@/hooks/use-system-status'
-import { useWeather } from '@/hooks/use-weather'
+import { useWeather } from '@/hooks/use-weather-trpc'
 
 export type DashboardPage = 'monitoring' | 'analytics'
 

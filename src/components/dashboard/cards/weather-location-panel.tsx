@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Progress } from '@/components/ui/progress'
-import { useWeather } from '@/hooks/use-weather'
+import { useWeather } from '@/hooks/use-weather-trpc'
 
 const weatherConditions = {
   'Clear': { icon: <Sun className="w-6 h-6 text-yellow-500" />, color: 'text-yellow-600', bg: 'bg-yellow-50' },

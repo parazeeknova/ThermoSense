@@ -5,7 +5,7 @@ import React from 'react'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Progress } from '@/components/ui/progress'
-import { useDeviceInfo } from '@/hooks/use-device-info'
+import { useDeviceInfo } from '@/hooks/use-device-info-trpc'
 
 export function BatteryCard() {
   const { data: deviceInfo, isLoading, error } = useDeviceInfo()

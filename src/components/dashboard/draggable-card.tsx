@@ -37,6 +37,7 @@ export function DraggableCard({
 }: EnhancedDraggableCardProps) {
   const cardRef = useRef<HTMLDivElement>(null)
   const [isHovered, setIsHovered] = useState(false)
+  const hoverTimeoutRef = useRef<NodeJS.Timeout | null>(null)
   const [isResizing, setIsResizing] = useState(false)
   const [resizeHandle, setResizeHandle] = useState<string | null>(null)
   const [touchStartPos, setTouchStartPos] = useState<{ x: number, y: number } | null>(null)
@@ -147,7 +148,7 @@ export function DraggableCard({
     }
 
     onResize?.(id, newSize)
-  }, [isResizing, resizeHandle, onResize, id])
+  }, [isResizing, resizeHandle]) // Remove onResize and id from dependencies
 
   const handleResizeEnd = useCallback(() => {
     setIsResizing(false)
@@ -201,8 +202,17 @@ export function DraggableCard({
       onTouchStart={handleTouchStart}
       onTouchEnd={handleTouchEnd}
       onTouchMove={handleTouchMove}
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
+      onMouseEnter={() => {
+        if (hoverTimeoutRef.current) {
+          clearTimeout(hoverTimeoutRef.current)
+        }
+        setIsHovered(true)
+      }}
+      onMouseLeave={() => {
+        hoverTimeoutRef.current = setTimeout(() => {
+          setIsHovered(false)
+        }, 100)
+      }}
       className={`group relative transition-all duration-300 h-full ${
         disabled
           ? 'opacity-50 cursor-not-allowed'

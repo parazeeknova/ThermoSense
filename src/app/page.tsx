@@ -1,5 +1,10 @@
-import Dashboard from '@/components/dashboard/dashboard'
+'use client'
 
-export default function Home() {
+import Dashboard from '@/components/dashboard/dashboard'
+import { trpc } from '@/lib/trpc'
+
+function Home() {
   return <Dashboard />
 }
+
+export default trpc.withTRPC(Home)

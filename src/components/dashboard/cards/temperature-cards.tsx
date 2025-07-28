@@ -4,8 +4,8 @@ import { AlertTriangle, CheckCircle, RefreshCw, Thermometer, TrendingDown, Trend
 import React from 'react'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { useDeviceInfo } from '@/hooks/use-device-info'
-import { useWeather } from '@/hooks/use-weather'
+import { useDeviceInfo } from '@/hooks/use-device-info-trpc'
+import { useWeather } from '@/hooks/use-weather-trpc'
 
 interface DeviceTemperatureCardProps {
   fallbackTemperature?: number
