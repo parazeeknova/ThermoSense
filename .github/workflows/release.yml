@@ -1,0 +1,209 @@
+name: Build and Release Electron App
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to release (e.g., v1.0.0)'
+        required: true
+        default: v1.0.0
+
+jobs:
+  build:
+    runs-on: ${{ matrix.os }}
+
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build Next.js app
+        run: npm run build
+        env:
+          SKIP_ENV_VALIDATION: true
+
+      - name: Build Electron main process
+        run: npm run build:electron
+
+      - name: Build Electron app (Linux)
+        if: matrix.os == 'ubuntu-latest'
+        run: npm run electron:dist -- --linux
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build Electron app (Windows)
+        if: matrix.os == 'windows-latest'
+        run: npm run electron:dist -- --win
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build Electron app (macOS)
+        if: matrix.os == 'macos-latest'
+        run: npm run electron:dist -- --mac
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          CSC_IDENTITY_AUTO_DISCOVERY: false
+
+      - name: Upload artifacts (Linux)
+        if: matrix.os == 'ubuntu-latest'
+        uses: actions/upload-artifact@v4
+        with:
+          name: linux-build
+          path: |
+            release/*.AppImage
+            release/*.deb
+            release/*.rpm
+            release/*.tar.gz
+
+      - name: Upload artifacts (Windows)
+        if: matrix.os == 'windows-latest'
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-build
+          path: |
+            release/*.exe
+            release/*.msi
+
+      - name: Upload artifacts (macOS)
+        if: matrix.os == 'macos-latest'
+        uses: actions/upload-artifact@v4
+        with:
+          name: macos-build
+          path: |
+            release/*.dmg
+            release/*.zip
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Display structure of downloaded files
+        run: ls -la artifacts/
+
+      - name: Get version
+        id: version
+        run: |
+          if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
+            echo "version=${{ github.event.inputs.version }}" >> $GITHUB_OUTPUT
+          else
+            echo "version=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Create Release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ steps.version.outputs.version }}
+          release_name: ThermoSense ${{ steps.version.outputs.version }}
+          body: |
+            ## ThermoSense Desktop Application
+
+            ### Changes in this release:
+            - Cross-platform desktop application for Windows, macOS, and Linux
+            - Native system integration with tray support
+            - Enhanced system information gathering
+            - Native desktop notifications
+
+            ### Downloads:
+            - **Windows**: Download the `.exe` installer
+            - **macOS**: Download the `.dmg` file
+            - **Linux**: Download the `.AppImage` for universal compatibility, or `.deb`/`.rpm` for your distribution
+
+            ### Installation:
+            - **Windows**: Run the installer and follow the setup wizard
+            - **macOS**: Open the DMG and drag ThermoSense to Applications
+            - **Linux**: Make the AppImage executable and run, or install the package file
+
+            Built from commit: ${{ github.sha }}
+          draft: false
+          prerelease: false
+
+      - name: Upload Linux AppImage
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: artifacts/linux-build/ThermoSense-${{ steps.version.outputs.version }}.AppImage
+          asset_name: ThermoSense-${{ steps.version.outputs.version }}-linux.AppImage
+          asset_content_type: application/octet-stream
+        continue-on-error: true
+
+      - name: Upload Linux DEB
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: artifacts/linux-build/thermosense_${{ steps.version.outputs.version }}_amd64.deb
+          asset_name: ThermoSense-${{ steps.version.outputs.version }}-linux.deb
+          asset_content_type: application/vnd.debian.binary-package
+        continue-on-error: true
+
+      - name: Upload Windows Installer
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: artifacts/windows-build/ThermoSense Setup ${{ steps.version.outputs.version }}.exe
+          asset_name: ThermoSense-${{ steps.version.outputs.version }}-windows.exe
+          asset_content_type: application/octet-stream
+        continue-on-error: true
+
+      - name: Upload macOS DMG
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: artifacts/macos-build/ThermoSense-${{ steps.version.outputs.version }}.dmg
+          asset_name: ThermoSense-${{ steps.version.outputs.version }}-macos.dmg
+          asset_content_type: application/octet-stream
+        continue-on-error: true
+
+  notify:
+    needs: [build, release]
+    runs-on: ubuntu-latest
+    if: always()
+
+    steps:
+      - name: Notify success
+        if: needs.build.result == 'success' && needs.release.result == 'success'
+        run: |
+          echo "✅ Release build completed successfully!"
+          echo "All platform builds completed and release created."
+
+      - name: Notify failure
+        if: needs.build.result == 'failure' || needs.release.result == 'failure'
+        run: |
+          echo "❌ Release build failed!"
+          echo "Check the logs for details."
+          exit 1

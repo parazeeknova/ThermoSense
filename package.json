@@ -14,7 +14,25 @@
     "electron": "npm run build:electron && NODE_ENV=development electron .",
     "electron:dev": "concurrently --kill-others \"npm run dev:web\" \"npm run build:electron && wait-on http-get://localhost:3000 && NODE_ENV=development electron .\"",
     "electron:dist": "npm run build && npm run build:electron && electron-builder",
-    "preelectron:pack": "npm run build && npm run build:electron"
+    "electron:dist:all": "npm run build && npm run build:electron && electron-builder --mac --win --linux",
+    "electron:dist:win": "npm run build && npm run build:electron && electron-builder --win",
+    "electron:dist:mac": "npm run build && npm run build:electron && electron-builder --mac",
+    "electron:dist:linux": "npm run build && npm run build:electron && electron-builder --linux",
+    "electron:pack": "npm run build && npm run build:electron && electron-builder --dir",
+    "clean": "rimraf dist release out .next",
+    "clean:all": "npm run clean && rimraf node_modules package-lock.json",
+    "postinstall": "electron-builder install-app-deps",
+    "preelectron:pack": "npm run build && npm run build:electron",
+    "release:patch": "npm version patch && git push --tags",
+    "release:minor": "npm version minor && git push --tags",
+    "release:major": "npm version major && git push --tags",
+    "build:local": "node scripts/build-local.js",
+    "build:local:all": "node scripts/build-local.js all",
+    "build:local:clean": "node scripts/build-local.js --clean",
+    "prepare:release": "node scripts/prepare-release.js",
+    "prepare:release:minor": "node scripts/prepare-release.js minor",
+    "prepare:release:major": "node scripts/prepare-release.js major",
+    "setup:dev": "node scripts/setup-dev.js"
   },
   "dependencies": {
     "@radix-ui/react-label": "^2.1.7",
@@ -55,6 +73,7 @@
     "eslint-config-next": "15.4.2",
     "eslint-plugin-format": "^1.0.1",
     "eslint-plugin-react-refresh": "^0.4.20",
+    "rimraf": "^6.0.1",
     "tailwindcss": "^4.1.11",
     "tw-animate-css": "^1.3.5",
     "typescript": "^5.8.3",
@@ -63,24 +82,121 @@
   "build": {
     "appId": "com.thermosense.app",
     "productName": "ThermoSense",
+    "copyright": "Copyright © 2025 ThermoSense",
     "directories": {
-      "output": "release"
+      "output": "release",
+      "buildResources": "build"
     },
     "files": [
       "dist/**/*",
       "out/**/*",
       "node_modules/**/*",
-      "package.json"
+      "package.json",
+      "!node_modules/.cache",
+      "!**/*.{iml,o,hprof,orig,pyc,pyo,rbc,swp,csproj,sln,xproj}",
+      "!.editorconfig",
+      "!**/._*",
+      "!**/{.DS_Store,.git,.hg,.svn,CVS,RCS,SCCS,.gitignore,.gitattributes}",
+      "!**/{__pycache__,thumbs.db,.flowconfig,.idea,.vs,.nyc_output}",
+      "!**/{appveyor.yml,.travis.yml,circle.yml}",
+      "!**/{npm-debug.log,yarn.lock,.yarn-integrity,.yarn-metadata.json}"
+    ],
+    "extraResources": [
+      {
+        "from": "assets/",
+        "to": "assets/",
+        "filter": ["**/*"]
+      }
     ],
     "mac": {
       "category": "public.app-category.utilities",
-      "target": "dmg"
+      "icon": "build/icon.icns",
+      "hardenedRuntime": true,
+      "gatekeeperAssess": false,
+      "entitlements": "build/entitlements.mac.plist",
+      "entitlementsInherit": "build/entitlements.mac.plist",
+      "target": [
+        {
+          "target": "dmg",
+          "arch": ["x64", "arm64"]
+        },
+        {
+          "target": "zip",
+          "arch": ["x64", "arm64"]
+        }
+      ]
+    },
+    "dmg": {
+      "contents": [
+        {
+          "x": 130,
+          "y": 220
+        },
+        {
+          "x": 410,
+          "y": 220,
+          "type": "link",
+          "path": "/Applications"
+        }
+      ]
     },
     "win": {
-      "target": "nsis"
+      "icon": "build/icon.ico",
+      "target": [
+        {
+          "target": "nsis",
+          "arch": ["x64", "ia32"]
+        },
+        {
+          "target": "msi",
+          "arch": ["x64", "ia32"]
+        },
+        {
+          "target": "portable",
+          "arch": ["x64"]
+        }
+      ]
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "deleteAppDataOnUninstall": false,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true
     },
     "linux": {
-      "target": "AppImage"
+      "icon": "build/icons/",
+      "category": "Utility",
+      "target": [
+        {
+          "target": "AppImage",
+          "arch": ["x64"]
+        },
+        {
+          "target": "deb",
+          "arch": ["x64"]
+        },
+        {
+          "target": "rpm",
+          "arch": ["x64"]
+        },
+        {
+          "target": "tar.gz",
+          "arch": ["x64"]
+        }
+      ]
+    },
+    "deb": {
+      "depends": ["gconf2", "gconf-service", "libnotify4", "libappindicator1", "libxtst6", "libnss3"]
+    },
+    "rpm": {
+      "depends": ["libnotify", "libappindicator"]
+    },
+    "publish": {
+      "provider": "github",
+      "owner": "your-github-username",
+      "repo": "thermosense"
     }
   }
 }
