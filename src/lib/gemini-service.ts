@@ -110,11 +110,20 @@ Keep recommendations practical and specific to the current conditions.
       const response = await this.callGemini(prompt)
       const parsed = JSON.parse(response.replace(/```json\n?|\n?```/g, ''))
 
-      return parsed.recommendations.map((rec: any, index: number) => ({
+      interface RecommendationResponse {
+        alertLevel: string
+        title: string
+        description: string
+        action?: string
+        naturalLanguageTip?: string
+        actions?: string[]
+      }
+
+      return (parsed.recommendations as RecommendationResponse[]).map((rec, index: number) => ({
         id: `ai-${Date.now()}-${index}`,
         alertLevel: rec.alertLevel as 'high' | 'medium' | 'low' | 'critical',
-        naturalLanguageTip: rec.naturalLanguageTip,
-        actions: rec.actions,
+        naturalLanguageTip: rec.naturalLanguageTip || rec.description,
+        actions: rec.actions || (rec.action ? [rec.action] : []),
         timestamp: new Date().toISOString(),
         isRead: false,
       }))

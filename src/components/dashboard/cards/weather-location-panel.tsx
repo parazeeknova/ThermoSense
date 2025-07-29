@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Progress } from '@/components/ui/progress'
-import { useWeather } from '@/hooks/use-weather-trpc'
+import { useWeather, useWeatherForecast } from '@/hooks/use-weather-trpc'
 
 const weatherConditions = {
   'Clear': { icon: <Sun className="w-6 h-6 text-yellow-500" />, color: 'text-yellow-600', bg: 'bg-yellow-50' },
@@ -18,17 +18,6 @@ const weatherConditions = {
 interface WeatherLocationPanelProps {
   onRefresh?: () => void
   onLocationChange?: (location: string) => void
-}
-
-interface ForecastDay {
-  date: string
-  day: string
-  high: number
-  low: number
-  condition: string
-  humidity: number
-  windSpeed: number
-  uvIndex: number
 }
 
 interface CompareLocation {
@@ -48,13 +37,13 @@ export function WeatherLocationPanel({
   const {
     weatherData,
     isLoading,
-    isUpdatingLocation,
-    isAutoLocating,
     error,
-    updateLocation,
-    autoLocate,
     refreshWeather,
+    coordinates,
   } = useWeather()
+
+  // Get forecast data using coordinates from current weather
+  const forecastQuery = useWeatherForecast(coordinates?.lat, coordinates?.lon)
 
   const [showLocationInput, setShowLocationInput] = useState(false)
   const [newLocation, setNewLocation] = useState('')
@@ -62,17 +51,7 @@ export function WeatherLocationPanel({
   const [showCompare, setShowCompare] = useState(false)
   const [compareLocations, setCompareLocations] = useState<CompareLocation[]>([])
   const [newCompareLocation, setNewCompareLocation] = useState('')
-  const [isLoadingForecast, setIsLoadingForecast] = useState(false)
   const [isLoadingCompare, setIsLoadingCompare] = useState(false)
-
-  // Mock forecast data - in real implementation, this would come from an API
-  const [forecastData] = useState<ForecastDay[]>([
-    { date: '2024-01-15', day: 'Today', high: 25, low: 18, condition: 'Clear', humidity: 65, windSpeed: 12, uvIndex: 6 },
-    { date: '2024-01-16', day: 'Tomorrow', high: 27, low: 19, condition: 'Partly Cloudy', humidity: 70, windSpeed: 15, uvIndex: 7 },
-    { date: '2024-01-17', day: 'Wednesday', high: 23, low: 16, condition: 'Rainy', humidity: 85, windSpeed: 18, uvIndex: 3 },
-    { date: '2024-01-18', day: 'Thursday', high: 22, low: 15, condition: 'Cloudy', humidity: 75, windSpeed: 10, uvIndex: 4 },
-    { date: '2024-01-19', day: 'Friday', high: 26, low: 17, condition: 'Clear', humidity: 60, windSpeed: 8, uvIndex: 8 },
-  ])
 
   const handleRefresh = async () => {
     refreshWeather()
@@ -82,7 +61,7 @@ export function WeatherLocationPanel({
   const handleLocationUpdate = async () => {
     if (newLocation.trim()) {
       try {
-        await updateLocation(newLocation.trim())
+        // TODO: Implement location update functionality
         onLocationChange?.(newLocation.trim())
         setShowLocationInput(false)
         setNewLocation('')
@@ -95,7 +74,9 @@ export function WeatherLocationPanel({
 
   const handleAutoLocate = async () => {
     try {
-      await autoLocate()
+      // TODO: Implement auto-location functionality
+      // eslint-disable-next-line no-console
+      console.log('Auto-locate requested')
     }
     catch (err) {
       console.error('Failed to auto-locate:', err)
@@ -103,18 +84,8 @@ export function WeatherLocationPanel({
   }
 
   const handleShowForecast = async () => {
-    setIsLoadingForecast(true)
-    try {
-      // In real implementation, fetch forecast data here
-      await new Promise(resolve => setTimeout(resolve, 1000)) // Simulate API call
-      setShowForecast(true)
-    }
-    catch (err) {
-      console.error('Failed to load forecast:', err)
-    }
-    finally {
-      setIsLoadingForecast(false)
-    }
+    setShowForecast(true)
+    // Forecast data is automatically fetched by the useWeatherForecast hook
   }
 
   const handleAddCompareLocation = async () => {
@@ -123,17 +94,33 @@ export function WeatherLocationPanel({
 
     setIsLoadingCompare(true)
     try {
-      // In real implementation, fetch weather data for the new location
-      await new Promise(resolve => setTimeout(resolve, 1000)) // Simulate API call
+      // For now, we'll use a direct tRPC call to fetch weather data
+      // In a more sophisticated implementation, we could create a mutation for this
+      const response = await fetch('/api/trpc/weather.getCurrentByCity', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          json: { city: newCompareLocation.trim() },
+        }),
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch weather data')
+      }
+
+      const result = await response.json()
+      const weatherData = result.result.data.json
 
       const newLocation: CompareLocation = {
         id: Date.now().toString(),
-        name: newCompareLocation.trim(),
-        temperature: 20 + Math.random() * 15,
-        condition: ['Clear', 'Cloudy', 'Rainy', 'Partly Cloudy'][Math.floor(Math.random() * 4)],
-        humidity: 40 + Math.random() * 40,
-        windSpeed: 5 + Math.random() * 20,
-        uvIndex: Math.random() * 10,
+        name: weatherData.location,
+        temperature: weatherData.temperature,
+        condition: weatherData.condition,
+        humidity: weatherData.humidity,
+        windSpeed: weatherData.windSpeed,
+        uvIndex: weatherData.uvIndex,
       }
 
       setCompareLocations(prev => [...prev, newLocation])
@@ -259,7 +246,7 @@ export function WeatherLocationPanel({
               size="sm"
               onClick={() => setShowLocationInput(!showLocationInput)}
               className="text-blue-600 border-blue-200 hover:bg-blue-50"
-              disabled={isUpdatingLocation}
+              disabled={false}
             >
               <Navigation className="w-4 h-4 mr-1" />
               Change
@@ -318,14 +305,14 @@ export function WeatherLocationPanel({
                 onChange={e => setNewLocation(e.target.value)}
                 onKeyDown={e => e.key === 'Enter' && handleLocationUpdate()}
                 className="flex-1 px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                disabled={isUpdatingLocation}
+                disabled={false}
               />
               <Button
                 size="sm"
                 onClick={handleLocationUpdate}
-                disabled={isUpdatingLocation || !newLocation.trim()}
+                disabled={!newLocation.trim()}
               >
-                {isUpdatingLocation ? <RefreshCw className="w-4 h-4 animate-spin" /> : 'Update'}
+                Update
               </Button>
               <Button size="sm" variant="outline" onClick={() => setShowLocationInput(false)}>
                 Cancel
@@ -468,9 +455,9 @@ export function WeatherLocationPanel({
             size="sm"
             className="flex-1"
             onClick={handleAutoLocate}
-            disabled={isAutoLocating}
+            disabled={false}
           >
-            {isAutoLocating ? <RefreshCw className="w-4 h-4 mr-1 animate-spin" /> : <MapPin className="w-4 h-4 mr-1" />}
+            <MapPin className="w-4 h-4 mr-1" />
             Auto-locate
           </Button>
           <Button
@@ -478,9 +465,9 @@ export function WeatherLocationPanel({
             size="sm"
             className="flex-1"
             onClick={handleShowForecast}
-            disabled={isLoadingForecast}
+            disabled={forecastQuery.isLoading}
           >
-            {isLoadingForecast ? <RefreshCw className="w-4 h-4 mr-1 animate-spin" /> : <Calendar className="w-4 h-4 mr-1" />}
+            {forecastQuery.isLoading ? <RefreshCw className="w-4 h-4 mr-1 animate-spin" /> : <Calendar className="w-4 h-4 mr-1" />}
             Forecast
           </Button>
           <Button
@@ -507,78 +494,117 @@ export function WeatherLocationPanel({
               </Button>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
-              {forecastData.map((day, index) => {
-                const condition = weatherConditions[day.condition as keyof typeof weatherConditions] || weatherConditions.Clear
-                return (
-                  <Card key={index} className={`${condition.bg} border`}>
-                    <CardContent className="p-4">
-                      <div className="text-center">
-                        <div className="font-medium text-sm text-gray-900 mb-2">{day.day}</div>
-                        <div className="flex justify-center mb-3">
-                          {condition.icon}
-                        </div>
-                        <div className="space-y-2">
-                          <div>
-                            <div className="text-lg font-bold text-gray-900">
-                              {day.high}
-                              °
-                            </div>
-                            <div className="text-sm text-gray-600">
-                              {day.low}
-                              °
-                            </div>
-                          </div>
-                          <div className="text-xs space-y-1">
-                            <div className="flex items-center justify-center space-x-1">
-                              <Droplets className="w-3 h-3 text-blue-500" />
-                              <span>
-                                {day.humidity}
-                                %
-                              </span>
-                            </div>
-                            <div className="flex items-center justify-center space-x-1">
-                              <Wind className="w-3 h-3 text-gray-500" />
-                              <span>
-                                {day.windSpeed}
-                                {' '}
-                                km/h
-                              </span>
-                            </div>
-                            <div className="flex items-center justify-center space-x-1">
-                              <Sun className="w-3 h-3 text-orange-500" />
-                              <span>
-                                UV
-                                {' '}
-                                {day.uvIndex}
-                              </span>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
+            {forecastQuery.isLoading
+              ? (
+                  <div className="flex items-center justify-center py-8">
+                    <RefreshCw className="w-6 h-6 animate-spin text-blue-600" />
+                    <span className="ml-2 text-gray-600">Loading forecast...</span>
+                  </div>
                 )
-              })}
-            </div>
+              : forecastQuery.error
+                ? (
+                    <div className="text-center py-8 text-red-600">
+                      <AlertCircle className="w-6 h-6 mx-auto mb-2" />
+                      <div>Failed to load forecast data</div>
+                      <div className="text-sm text-gray-600 mt-1">
+                        {forecastQuery.error.message}
+                      </div>
+                    </div>
+                  )
+                : forecastQuery.data
+                  ? (
+                      <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+                        {forecastQuery.data.forecast.map((day, index) => {
+                          // Map weather description to our condition types
+                          const getConditionFromDescription = (description: string) => {
+                            if (description.includes('rain') || description.includes('drizzle'))
+                              return 'Rainy'
+                            if (description.includes('cloud'))
+                              return 'Partly Cloudy'
+                            if (description.includes('clear'))
+                              return 'Clear'
+                            return 'Cloudy'
+                          }
 
-            <div className="mt-6 p-4 bg-blue-50 rounded-lg">
-              <div className="flex items-start space-x-3">
-                <TrendingUp className="w-5 h-5 text-blue-600 mt-1" />
-                <div>
-                  <div className="font-medium text-blue-900">Forecast Analysis</div>
-                  <div className="text-sm text-blue-800 mt-1">
-                    Temperature trending
-                    {' '}
-                    {forecastData[1].high > forecastData[0].high ? 'up' : 'down'}
-                    {' '}
-                    tomorrow.
-                    {forecastData.some(day => day.condition === 'Rainy') && ' Rain expected this week - consider indoor activities for device protection.'}
-                    {Math.max(...forecastData.map(d => d.high)) > 30 && ' High temperatures ahead may increase device thermal stress.'}
+                          const condition = getConditionFromDescription(day.description)
+                          const conditionStyle = weatherConditions[condition as keyof typeof weatherConditions] || weatherConditions.Clear
+
+                          // Format day name
+                          const dayName = index === 0
+                            ? 'Today'
+                            : index === 1
+                              ? 'Tomorrow'
+                              : new Date(day.date).toLocaleDateString('en-US', { weekday: 'short' })
+
+                          return (
+                            <Card key={day.date} className={`${conditionStyle.bg} border`}>
+                              <CardContent className="p-4">
+                                <div className="text-center">
+                                  <div className="font-medium text-sm text-gray-900 mb-2">{dayName}</div>
+                                  <div className="flex justify-center mb-3">
+                                    {conditionStyle.icon}
+                                  </div>
+                                  <div className="space-y-2">
+                                    <div>
+                                      <div className="text-lg font-bold text-gray-900">
+                                        {day.temperature.max}
+                                        °
+                                      </div>
+                                      <div className="text-sm text-gray-600">
+                                        {day.temperature.min}
+                                        °
+                                      </div>
+                                    </div>
+                                    <div className="text-xs space-y-1">
+                                      <div className="flex items-center justify-center space-x-1">
+                                        <Droplets className="w-3 h-3 text-blue-500" />
+                                        <span>
+                                          {day.humidity}
+                                          %
+                                        </span>
+                                      </div>
+                                      <div className="text-xs text-gray-600 text-center mt-1">
+                                        {day.description}
+                                      </div>
+                                    </div>
+                                  </div>
+                                </div>
+                              </CardContent>
+                            </Card>
+                          )
+                        })}
+                      </div>
+                    )
+                  : (
+                      <div className="text-center py-8 text-gray-500">
+                        <Calendar className="w-12 h-12 mx-auto mb-2 opacity-50" />
+                        <div>No forecast data available</div>
+                      </div>
+                    )}
+
+            {forecastQuery.data && (
+              <div className="mt-6 p-4 bg-blue-50 rounded-lg">
+                <div className="flex items-start space-x-3">
+                  <TrendingUp className="w-5 h-5 text-blue-600 mt-1" />
+                  <div>
+                    <div className="font-medium text-blue-900">Forecast Analysis</div>
+                    <div className="text-sm text-blue-800 mt-1">
+                      {forecastQuery.data.forecast.length > 1 && (
+                        <>
+                          Temperature trending
+                          {' '}
+                          {forecastQuery.data.forecast[1].temperature.max > forecastQuery.data.forecast[0].temperature.max ? 'up' : 'down'}
+                          {' '}
+                          tomorrow.
+                          {forecastQuery.data.forecast.some(day => day.description.includes('rain')) && ' Rain expected this week - consider indoor activities for device protection.'}
+                          {Math.max(...forecastQuery.data.forecast.map(d => d.temperature.max)) > 30 && ' High temperatures ahead may increase device thermal stress.'}
+                        </>
+                      )}
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
+            )}
           </div>
         )}
 

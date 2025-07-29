@@ -35,11 +35,14 @@ export function BlueprintGrid({
   ])
 
   useEffect(() => {
-    const updateWindowSize = () => {
+    function updateWindowSize() {
       setWindowSize({ width: window.innerWidth, height: window.innerHeight })
     }
 
-    updateWindowSize()
+    const initializeWindowSize = () => {
+      updateWindowSize()
+    }
+    initializeWindowSize()
     window.addEventListener('resize', updateWindowSize)
     return () => window.removeEventListener('resize', updateWindowSize)
   }, [])

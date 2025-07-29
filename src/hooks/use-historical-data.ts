@@ -1,5 +1,6 @@
-import { useQuery, useQueryClient } from '@tanstack/react-query'
+import { useQueryClient } from '@tanstack/react-query'
 import { useEffect } from 'react'
+import { trpc } from '@/lib/trpc'
 
 interface HistoricalReading {
   timestamp: string
@@ -45,28 +46,6 @@ export const historicalDataKeys = {
     [...historicalDataKeys.all, 'range', timeRange, limit, location] as const,
 }
 
-async function fetchHistoricalData(
-  timeRange: string = '30min',
-  limit: number = 30,
-  location?: { lat: number, lng: number, city: string },
-): Promise<HistoricalDataResponse> {
-  const params = new URLSearchParams({ timeRange, limit: limit.toString() })
-
-  if (location) {
-    params.append('lat', location.lat.toString())
-    params.append('lng', location.lng.toString())
-    params.append('city', location.city)
-  }
-
-  const response = await fetch(`/api/device/history?${params}`)
-
-  if (!response.ok) {
-    throw new Error('Failed to fetch historical data')
-  }
-
-  return response.json()
-}
-
 export function useHistoricalData(
   timeRange: '30min' | '1hour' | '6hours' | '24hours' = '30min',
   limit: number = 30,
@@ -74,9 +53,13 @@ export function useHistoricalData(
 ) {
   const queryClient = useQueryClient()
 
-  const query = useQuery({
-    queryKey: historicalDataKeys.byRange(timeRange, limit, location?.city),
-    queryFn: () => fetchHistoricalData(timeRange, limit, location),
+  const query = trpc.device.getHistory.useQuery({
+    timeRange,
+    limit,
+    lat: location?.lat,
+    lng: location?.lng,
+    city: location?.city,
+  }, {
     refetchInterval: (query) => {
       // If bootstrapping, refetch more frequently
       if (query.state.data?.isBootstrapping) {

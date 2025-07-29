@@ -155,10 +155,23 @@ export const weatherRouter = router({
         const forecastUrl = `https://api.openweathermap.org/data/2.5/forecast?lat=${input.latitude}&lon=${input.longitude}&appid=${env.NEXT_PUBLIC_OPENWEATHER_API_KEY}&units=metric`
         const forecastData = await fetchWeatherData(forecastUrl)
 
-        const dailyForecasts = forecastData.list
-          .filter((_: any, index: number) => index % 8 === 0) // Get one forecast per day (every 8th item = 24 hours)
+        interface ForecastItem {
+          dt: number
+          main: {
+            temp_min: number
+            temp_max: number
+            humidity: number
+          }
+          weather: Array<{
+            description: string
+            icon: string
+          }>
+        }
+
+        const dailyForecasts = (forecastData.list as ForecastItem[])
+          .filter((_, index: number) => index % 8 === 0) // Get one forecast per day (every 8th item = 24 hours)
           .slice(0, 5) // Get 5 days
-          .map((item: any) => ({
+          .map((item: ForecastItem) => ({
             date: new Date(item.dt * 1000).toISOString(),
             temperature: {
               min: Math.round(item.main.temp_min * 10) / 10,

@@ -18,6 +18,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Progress } from '@/components/ui/progress'
+import { useAIPredictiveAnalytics } from '@/hooks/use-ai-trpc'
 
 // Enhanced prediction timeline generator with more sophisticated data
 function generatePredictionTimeline(predictedTemp: number, riskTrend: 'increasing' | 'decreasing' | 'stable') {
@@ -63,7 +64,24 @@ function generatePredictionTimeline(predictedTemp: number, riskTrend: 'increasin
 }
 
 // Custom tooltip for the enhanced chart
-function CustomTooltip({ active, payload, label }: any) {
+interface TooltipProps {
+  active?: boolean
+  payload?: Array<{
+    payload: {
+      timestamp: string
+      temperature: number
+      batteryLevel: number
+      cpuLoad: number
+      prediction: number
+      predicted: number
+      confidence: number
+      riskLevel: 'low' | 'medium' | 'high'
+    }
+  }>
+  label?: string
+}
+
+function CustomTooltip({ active, payload, label }: TooltipProps) {
   if (active && payload && payload.length) {
     const data = payload[0].payload
     return (
@@ -109,10 +127,12 @@ export function PredictiveAnalyticsPanel({
 }: PredictiveAnalyticsPanelProps) {
   const [predictiveData, setPredictiveData] = useState<PredictiveData | null>(null)
   const [selectedTimeframe, setSelectedTimeframe] = useState<'1hour' | '6hours' | '24hours'>('1hour')
-  const [showDetails, setShowDetails] = useState(true) // Default to true
+  const [showDetails, setShowDetails] = useState(true)
   const [isGenerating, setIsGenerating] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [lastGenerated, setLastGenerated] = useState<string | null>(null)
+
+  const predictiveAnalyticsMutation = useAIPredictiveAnalytics()
 
   // Load from localStorage on mount
   useEffect(() => {
@@ -120,18 +140,24 @@ export function PredictiveAnalyticsPanel({
     if (stored) {
       try {
         const parsed = JSON.parse(stored)
-        setPredictiveData(parsed.data)
-        setLastGenerated(parsed.timestamp)
+        if (!predictiveData) {
+          // eslint-disable-next-line react-hooks-extra/no-direct-set-state-in-use-effect
+          setPredictiveData(parsed.data)
+          // Set lastGenerated from the stored timestamp
+          // eslint-disable-next-line react-hooks-extra/no-direct-set-state-in-use-effect
+          setLastGenerated(parsed.timestamp)
+        }
       }
       catch (error) {
         console.error('Error loading stored predictive data:', error)
         localStorage.removeItem(STORAGE_KEY)
       }
     }
-    else if (initialPredictiveData) {
+    else if (initialPredictiveData && !predictiveData) {
+      // eslint-disable-next-line react-hooks-extra/no-direct-set-state-in-use-effect
       setPredictiveData(initialPredictiveData)
     }
-  }, [initialPredictiveData])
+  }, [initialPredictiveData, predictiveData])
 
   // Save to localStorage when data changes
   useEffect(() => {
@@ -141,6 +167,7 @@ export function PredictiveAnalyticsPanel({
         timestamp: new Date().toISOString(),
       }
       localStorage.setItem(STORAGE_KEY, JSON.stringify(dataToStore))
+      // eslint-disable-next-line react-hooks-extra/no-direct-set-state-in-use-effect
       setLastGenerated(dataToStore.timestamp)
     }
   }, [predictiveData])
@@ -151,29 +178,16 @@ export function PredictiveAnalyticsPanel({
 
     try {
       const context = {
-        deviceTemp,
-        batteryLevel,
-        weatherTemp,
-        cpuUsage,
+        deviceTemp: deviceTemp || 45,
+        batteryLevel: batteryLevel || 80,
+        weatherTemp: weatherTemp || 25,
+        cpuUsage: cpuUsage || 30,
         screenBrightness,
-        activeApps,
+        activeApps: activeApps || 0,
       }
 
-      const response = await fetch('/api/ai/predictive-analytics', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(context),
-      })
-
-      const data = await response.json()
-
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to generate predictive analytics')
-      }
-
-      setPredictiveData(data.predictiveData)
+      const result = await predictiveAnalyticsMutation.mutateAsync(context)
+      setPredictiveData(result.predictiveData)
     }
     catch (err) {
       console.error('Failed to generate predictive analytics:', err)
@@ -518,7 +532,7 @@ export function PredictiveAnalyticsPanel({
               <div className="space-y-2">
                 {predictiveData.recommendedActions.map((action, index) => (
                   <div
-                    key={index}
+                    key={action}
                     className="flex flex-col sm:flex-row sm:items-center justify-between p-3 bg-yellow-50 rounded-lg border border-yellow-200 gap-2"
                   >
                     <div className="flex items-center space-x-3">
@@ -538,7 +552,7 @@ export function PredictiveAnalyticsPanel({
             <div className="space-y-3">
               <h4 className="text-xs sm:text-sm font-medium text-gray-700">Risk Level Timeline</h4>
               <div className="flex space-x-1 h-6 sm:h-8 rounded overflow-hidden">
-                {getFilteredTimeline().map((point, index) => {
+                {getFilteredTimeline().map((point) => {
                   const riskColors = {
                     low: 'bg-emerald-500',
                     medium: 'bg-yellow-500',
@@ -546,7 +560,7 @@ export function PredictiveAnalyticsPanel({
                   }
                   return (
                     <div
-                      key={index}
+                      key={point.time}
                       // @ts-expect-error: TODO
                       className={`flex-1 ${riskColors[point.riskLevel]} opacity-80 hover:opacity-100 transition-opacity cursor-pointer`}
                       title={`${point.time}: ${point.riskLevel} risk (${point.predicted}°C)`}

@@ -82,4 +82,27 @@ export const systemRouter = router({
       throw new Error('Failed to fetch app information')
     }
   }),
+
+  getElectronSystemInfo: publicProcedure.query(async () => {
+    try {
+      // This procedure provides enhanced system info for both web and Electron
+      const os = await import('node:os')
+
+      return {
+        platform: process.platform,
+        arch: process.arch,
+        nodeVersion: process.version,
+        totalMemory: os.totalmem(),
+        freeMemory: os.freemem(),
+        cpuCount: os.cpus().length,
+        uptime: os.uptime(),
+        hostname: os.hostname(),
+        timestamp: new Date().toISOString(),
+      }
+    }
+    catch (error) {
+      console.error('Error fetching system info:', error)
+      throw new Error('Failed to fetch system information')
+    }
+  }),
 })

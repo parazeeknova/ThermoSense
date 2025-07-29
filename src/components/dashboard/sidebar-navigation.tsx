@@ -1,6 +1,6 @@
 'use client'
 
-import { Activity, BarChart3, Battery, Brain, Calendar, ChevronLeft, ChevronRight, Gauge, Thermometer, TrendingUp, Wifi } from 'lucide-react'
+import { Activity, BarChart3, Battery, Brain, Calendar, ChevronLeft, ChevronRight, Gauge, Info, Thermometer, TrendingUp, Wifi } from 'lucide-react'
 import React from 'react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -11,7 +11,7 @@ import { useHistoricalData } from '@/hooks/use-historical-data'
 import { useSystemStatus } from '@/hooks/use-system-status'
 import { useWeather } from '@/hooks/use-weather-trpc'
 
-export type DashboardPage = 'monitoring' | 'analytics'
+export type DashboardPage = 'monitoring' | 'analytics' | 'info'
 
 interface SidebarNavigationProps {
   currentPage: DashboardPage
@@ -40,6 +40,15 @@ const pageConfig = {
     color: 'purple',
     gradient: 'from-purple-500 to-indigo-600',
     shortTitle: 'Analytics',
+  },
+  info: {
+    id: 'info',
+    title: 'System Information',
+    description: 'Platform details & diagnostics',
+    icon: <Info className="w-5 h-5" />,
+    color: 'blue',
+    gradient: 'from-blue-500 to-cyan-600',
+    shortTitle: 'Info',
   },
 } as const
 
@@ -93,7 +102,15 @@ export function SidebarNavigation({
     }
   }
 
-  const assessRisk = (readings: any[]): { level: 'low' | 'medium' | 'high', factors: string[] } => {
+  interface Reading {
+    batteryTemp: number
+    ambientTemp: number
+    cpuLoad: number
+    batteryLevel: number
+    batteryHealth: number
+  }
+
+  const assessRisk = (readings: Reading[]): { level: 'low' | 'medium' | 'high', factors: string[] } => {
     if (readings.length === 0)
       return { level: 'low', factors: [] }
 

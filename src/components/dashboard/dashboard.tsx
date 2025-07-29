@@ -6,13 +6,16 @@ import { LocationProvider } from '@/contexts/location-context'
 import { useDeviceInfo } from '@/hooks/use-device-info-trpc'
 import { useWeather } from '@/hooks/use-weather-trpc'
 import { QueryProvider } from '@/providers/query-provider'
+import { ElectronStatus } from '../electron/electron-status'
 import { BlueprintGrid } from './blueprint-grid'
 import { BatteryCard } from './cards/battery-card'
 import { DeviceConfigPanel } from './cards/device-config-panel'
 import { HeatRiskMeter } from './cards/heat-risk-meter'
 import { HistoricalDataPanel } from './cards/historical-data-panel'
 import { NotificationCenter } from './cards/notification-center'
+import { PlatformDetailsCard } from './cards/platform-details-card'
 import { PredictiveAnalyticsPanel } from './cards/predictive-analytics-panel'
+import { SystemOverviewCard } from './cards/system-overview-card'
 import { DeviceTemperatureCard, OutdoorTemperatureCard } from './cards/temperature-cards'
 import { WeatherLocationPanel } from './cards/weather-location-panel'
 import { DraggableCard } from './draggable-card'
@@ -27,12 +30,17 @@ const bentoLayouts: Record<DashboardPage, Record<string, string>> = {
     'battery-level': 'col-span-1 row-span-1',
     'heat-risk-meter': 'col-span-1 row-span-1',
     'weather-location': 'col-span-2 row-span-2',
-    'notification-center': 'col-span-2 row-span-2',
+    'notification-center': 'col-span-2 row-span-1',
   },
   analytics: {
     'historical-data': 'col-span-4 row-span-2',
     'predictive-analytics': 'col-span-2 row-span-2',
     'device-config': 'col-span-2 row-span-2',
+  },
+  info: {
+    'electron-status': 'col-span-2 row-span-2',
+    'system-overview': 'col-span-1 row-span-2',
+    'platform-details': 'col-span-1 row-span-2',
   },
 }
 
@@ -50,6 +58,11 @@ const pageCards = {
     { id: 'predictive-analytics' },
     { id: 'device-config' },
   ],
+  info: [
+    { id: 'electron-status' },
+    { id: 'system-overview' },
+    { id: 'platform-details' },
+  ],
 }
 
 function DashboardContent() {
@@ -61,6 +74,7 @@ function DashboardContent() {
   const [sidebarVisible, setSidebarVisible] = useState(false)
   const [monitoringCardOrder, setMonitoringCardOrder] = useState(pageCards.monitoring)
   const [analyticsCardOrder, setAnalyticsCardOrder] = useState(pageCards.analytics)
+  const [infoCardOrder, setInfoCardOrder] = useState(pageCards.info)
 
   // Get device and weather data for AI components
   const { data: deviceInfo } = useDeviceInfo()
@@ -144,8 +158,12 @@ function DashboardContent() {
     e.preventDefault()
     setDragOverTarget(null)
     if (draggedCard && draggedCard !== targetId) {
-      const currentCardOrder = currentPage === 'monitoring' ? monitoringCardOrder : analyticsCardOrder
-      const setCardOrder = currentPage === 'monitoring' ? setMonitoringCardOrder : setAnalyticsCardOrder
+      const currentCardOrder = currentPage === 'monitoring'
+        ? monitoringCardOrder
+        : currentPage === 'analytics' ? analyticsCardOrder : infoCardOrder
+      const setCardOrder = currentPage === 'monitoring'
+        ? setMonitoringCardOrder
+        : currentPage === 'analytics' ? setAnalyticsCardOrder : setInfoCardOrder
 
       const newOrder = [...currentCardOrder]
       const draggedIndex = newOrder.findIndex(card => card.id === draggedCard)
@@ -159,15 +177,21 @@ function DashboardContent() {
     }
   }
 
-  const currentCardOrder = currentPage === 'monitoring' ? monitoringCardOrder : analyticsCardOrder
+  const currentCardOrder = currentPage === 'monitoring'
+    ? monitoringCardOrder
+    : currentPage === 'analytics' ? analyticsCardOrder : infoCardOrder
 
   const pageTitle = currentPage === 'monitoring'
     ? 'Real-time Device Monitoring Dashboard'
-    : 'Analytics & Configuration Center'
+    : currentPage === 'analytics'
+      ? 'Analytics & Configuration Center'
+      : 'System Information & Diagnostics'
 
   const pageDescription = currentPage === 'monitoring'
     ? 'Live device thermal monitoring with real-time insights and recommendations'
-    : 'Historical analysis, predictions, and device configuration settings'
+    : currentPage === 'analytics'
+      ? 'Historical analysis, predictions, and device configuration settings'
+      : 'Platform details, Electron status, and system diagnostics'
 
   const renderCard = (cardId: string) => {
     switch (cardId) {
@@ -179,6 +203,8 @@ function DashboardContent() {
         return <BatteryCard />
       case 'heat-risk-meter':
         return <HeatRiskMeter />
+      case 'electron-status':
+        return <ElectronStatus />
       case 'notification-center':
         return (
           <NotificationCenter
@@ -207,6 +233,10 @@ function DashboardContent() {
         return <HistoricalDataPanel />
       case 'device-config':
         return <DeviceConfigPanel />
+      case 'system-overview':
+        return <SystemOverviewCard />
+      case 'platform-details':
+        return <PlatformDetailsCard />
       default:
         return null
     }

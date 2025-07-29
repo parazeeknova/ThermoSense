@@ -615,9 +615,9 @@ export function HistoricalDataPanel() {
                   </h4>
                   <div className="w-full border rounded-lg p-2 sm:p-4 bg-white">
                     <div className="flex w-full h-4 sm:h-6 rounded overflow-hidden">
-                      {data.map((reading, index) => (
+                      {data.map(reading => (
                         <div
-                          key={index}
+                          key={reading.timestamp}
                           className={`${getDeviceStateColor(reading.deviceState)} opacity-80 hover:opacity-100 transition-opacity cursor-pointer`}
                           style={{
                             width: `${100 / data.length}%`,
@@ -703,8 +703,8 @@ export function HistoricalDataPanel() {
                         </tr>
                       </thead>
                       <tbody>
-                        {data.slice(-10).map((reading, index) => (
-                          <tr key={index} className="border-b border-gray-100 hover:bg-gray-50">
+                        {data.slice(-10).map(reading => (
+                          <tr key={reading.timestamp} className="border-b border-gray-100 hover:bg-gray-50">
                             <td className="p-1 sm:p-2">{formatTime(reading.timestamp)}</td>
                             <td className="p-1 sm:p-2 text-red-600">{reading.batteryTemp.toFixed(1)}</td>
                             <td className="p-1 sm:p-2 text-emerald-600">{reading.ambientTemp.toFixed(1)}</td>

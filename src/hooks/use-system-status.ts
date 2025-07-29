@@ -62,10 +62,11 @@ async function fetchConnectionStatus(): Promise<InternetConnection> {
     }
   }
 
-  // Test connection with a lightweight GET request to weather API
+  // Test connection with a lightweight tRPC call
   try {
     const startTime = performance.now()
-    const response = await fetch('/api/weather/current?city=London', {
+    // Use a simple system info call to test connectivity
+    const response = await fetch('/api/trpc/system.getAppInfo', {
       method: 'GET',
       signal: AbortSignal.timeout(5000),
     })

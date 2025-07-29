@@ -65,7 +65,7 @@ export function HeatRiskMeter() {
       cpuLoad,
       trend: Math.min(100, Math.max(0, (trend + 10) / 20 * 100)),
       humidity,
-      timeOfDay: currentHour >= 12 && currentHour <= 18 ? 20 : 0, // Peak hours penalty
+      timeOfDay: currentHour >= 12 && currentHour <= 18 ? 20 : 0,
     }
 
     // Weighted scoring
@@ -170,9 +170,11 @@ export function HeatRiskMeter() {
     return { ...config, recommendation }
   }
 
+  const cores = deviceInfo?.temperature?.cores
+
   const temperatureData = useMemo(() => {
     const deviceTemp = deviceInfo?.temperature?.cpu
-      || (deviceInfo?.temperature?.cores?.reduce((sum, temp) => sum + temp, 0) || 0) / (deviceInfo?.temperature?.cores?.length || 1)
+      || (cores?.reduce((sum, temp) => sum + temp, 0) || 0) / (cores?.length || 1)
       || deviceInfo?.temperature?.max || 45
 
     const ambientTemp = weatherData?.temperature || 25
@@ -186,8 +188,7 @@ export function HeatRiskMeter() {
     deviceInfo?.load?.currentLoad,
     weatherData?.temperature,
     weatherData?.humidity,
-    // Stringify cores array to avoid reference changes
-    JSON.stringify(deviceInfo?.temperature?.cores),
+    cores,
   ])
 
   // Update temperature history with throttling
@@ -196,26 +197,30 @@ export function HeatRiskMeter() {
       const { deviceTemp, ambientTemp, cpuLoad } = temperatureData
       const now = Date.now()
 
-      // Throttle updates to prevent infinite loops - only update every 5 seconds
-      setTemperatureHistory((prev) => {
-        const lastEntry = prev[prev.length - 1]
-        if (lastEntry && now - lastEntry.timestamp < 5000) {
-          return prev // Don't update if less than 5 seconds have passed
-        }
+      const timeoutId = setTimeout(() => {
+        setTemperatureHistory((prev) => {
+          const lastEntry = prev[prev.length - 1]
+          if (lastEntry && now - lastEntry.timestamp < 5000) {
+            // Don't update if less than 5 seconds have passed
+            return prev
+          }
 
-        const newEntry: TemperatureHistory = {
-          timestamp: now,
-          temperature: deviceTemp,
-          cpuLoad,
-          ambientTemp,
-        }
+          const newEntry: TemperatureHistory = {
+            timestamp: now,
+            temperature: deviceTemp,
+            cpuLoad,
+            ambientTemp,
+          }
 
-        // Keep last 20 entries (for trends)
-        const updated = [...prev, newEntry].slice(-20)
-        return updated
-      })
+          // Keep last 20 entries (for trends)
+          const updated = [...prev, newEntry].slice(-20)
+          return updated
+        })
+      }, 0)
+
+      return () => clearTimeout(timeoutId)
     }
-  }, [deviceInfo?.timestamp, weatherData?.lastUpdated]) // Only depend on timestamps
+  }, [deviceInfo, weatherData, temperatureData])
 
   useEffect(() => {
     if (deviceInfo && weatherData && temperatureData) {
@@ -233,7 +238,7 @@ export function HeatRiskMeter() {
 
       return () => clearInterval(interval)
     }
-  }, [deviceInfo?.timestamp, weatherData?.lastUpdated, temperatureHistory.length]) // Only depend on timestamps and history length
+  }, [deviceInfo, weatherData, temperatureData, temperatureHistory])
 
   const currentData = useMemo(() => {
     if (!deviceInfo && !weatherData)
@@ -241,7 +246,7 @@ export function HeatRiskMeter() {
 
     const { deviceTemp, ambientTemp, cpuLoad, humidity } = temperatureData
     return calculateAdvancedRisk(deviceTemp, ambientTemp, cpuLoad, temperatureHistory, humidity)
-  }, [deviceInfo?.timestamp, weatherData?.lastUpdated, temperatureHistory.length, temperatureData])
+  }, [deviceInfo, weatherData, temperatureHistory, temperatureData])
 
   const getTrendIndicator = () => {
     if (temperatureHistory.length < 3)

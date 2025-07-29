@@ -7,4 +7,6 @@ function Home() {
   return <Dashboard />
 }
 
-export default trpc.withTRPC(Home)
+const HomeWithTRPC = trpc.withTRPC(Home)
+
+export default HomeWithTRPC

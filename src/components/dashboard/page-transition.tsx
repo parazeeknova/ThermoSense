@@ -14,21 +14,25 @@ export function PageTransition({ children, pageKey, className = '' }: PageTransi
   const [currentKey, setCurrentKey] = useState(pageKey)
 
   useEffect(() => {
-    if (pageKey !== currentKey) {
-      // Page is changing, start exit animation
-      setIsVisible(false)
+    const handlePageChange = () => {
+      if (pageKey !== currentKey) {
+        // Page is changing, start exit animation
+        setIsVisible(false)
 
-      const timeout = setTimeout(() => {
-        setCurrentKey(pageKey)
+        const timeout = setTimeout(() => {
+          setCurrentKey(pageKey)
+          setIsVisible(true)
+        }, 150)
+
+        return () => clearTimeout(timeout)
+      }
+      else {
+        // Page is the same, ensure it's visible
         setIsVisible(true)
-      }, 150) // Half of the transition duration
+      }
+    }
 
-      return () => clearTimeout(timeout)
-    }
-    else {
-      // Page is the same, ensure it's visible
-      setIsVisible(true)
-    }
+    return handlePageChange()
   }, [pageKey, currentKey])
 
   return (
@@ -48,7 +52,7 @@ interface StaggeredGridProps {
   children: ReactNode[]
   className?: string
   staggerDelay?: number
-  [key: string]: any // Allow additional props like data attributes
+  [key: string]: unknown
 }
 
 export function StaggeredGrid({
@@ -61,20 +65,25 @@ export function StaggeredGrid({
 
   useEffect(() => {
     // Reset visibility
-    // @ts-expect-error: TODO
-    setVisibleItems(Array.from({ length: children.length }).fill(false))
+    setVisibleItems(Array.from({ length: children.length }, () => false))
 
     // Stagger the appearance of items
+    const timeouts: NodeJS.Timeout[] = []
     children.forEach((_, index) => {
-      setTimeout(() => {
+      const timeout = setTimeout(() => {
         setVisibleItems((prev) => {
           const newArray = [...prev]
           newArray[index] = true
           return newArray
         })
       }, index * staggerDelay)
+      timeouts.push(timeout)
     })
-  }, [children.length, staggerDelay])
+
+    return () => {
+      timeouts.forEach(timeout => clearTimeout(timeout))
+    }
+  }, [children, staggerDelay])
 
   return (
     <div className={className} {...props}>
@@ -88,7 +97,7 @@ export function StaggeredGrid({
           }`}
           style={{
             transitionDelay: `${index * staggerDelay}ms`,
-          }}
+          }} // Cleanup function to clear all timeouts
         >
           {child}
         </div>

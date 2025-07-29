@@ -1,12 +1,16 @@
 {
-  "extends": "./tsconfig.json",
   "compilerOptions": {
     "target": "es2020",
+    "lib": ["es2020"],
     "rootDir": "./",
     "module": "commonjs",
     "moduleResolution": "node",
+    "types": ["node", "electron"],
     "strict": true,
+    "declaration": false,
     "outDir": "./dist",
+    "removeComments": true,
+    "sourceMap": false,
     "allowSyntheticDefaultImports": true,
     "esModuleInterop": true,
     "skipLibCheck": true
@@ -14,13 +18,16 @@
   "include": [
     "main.ts",
     "preload.ts",
-    "src/lib/electron-utils.ts"
+    "src/types/electron-ipc.ts"
   ],
   "exclude": [
     "node_modules",
     "dist",
     "out",
     "src/app",
-    "src/components"
+    "src/components",
+    "src/hooks",
+    "src/lib",
+    "src/server"
   ]
 }
