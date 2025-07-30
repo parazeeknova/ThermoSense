@@ -3,11 +3,13 @@
 import type { DashboardPage } from './sidebar-navigation'
 import React, { useEffect, useState } from 'react'
 import { LocationProvider } from '@/contexts/location-context'
+import { useAPIKeyConfig } from '@/hooks/use-api-key-config'
 import { useDeviceInfo } from '@/hooks/use-device-info-trpc'
 import { useWeather } from '@/hooks/use-weather-trpc'
 import { QueryProvider } from '@/providers/query-provider'
 import { ElectronStatus } from '../electron/electron-status'
 import { BlueprintGrid } from './blueprint-grid'
+import { APIKeyConfigurationCard } from './cards/api-key-configuration-card'
 import { BatteryCard } from './cards/battery-card'
 import { DeviceConfigPanel } from './cards/device-config-panel'
 import { HeatRiskMeter } from './cards/heat-risk-meter'
@@ -41,6 +43,7 @@ const bentoLayouts: Record<DashboardPage, Record<string, string>> = {
     'electron-status': 'col-span-2 row-span-2',
     'system-overview': 'col-span-1 row-span-2',
     'platform-details': 'col-span-1 row-span-2',
+    'api-key-config': 'col-span-2 row-span-2',
   },
 }
 
@@ -62,6 +65,7 @@ const pageCards = {
     { id: 'electron-status' },
     { id: 'system-overview' },
     { id: 'platform-details' },
+    { id: 'api-key-config' },
   ],
 }
 
@@ -85,6 +89,9 @@ function DashboardContent() {
   const cpuUsage = deviceInfo?.load?.currentLoad
   const screenBrightness = 50 // Placeholder since system.screenBrightness doesn't exist - TODO
   const activeApps = 5 // Placeholder since system.activeProcesses doesn't exist - TODO
+
+  // Get API key configuration data
+  const apiKeyConfig = useAPIKeyConfig()
 
   useEffect(() => {
     const checkScreenSize = () => {
@@ -237,6 +244,21 @@ function DashboardContent() {
         return <SystemOverviewCard />
       case 'platform-details':
         return <PlatformDetailsCard />
+      case 'api-key-config':
+        return (
+          <APIKeyConfigurationCard
+            geminiKey={apiKeyConfig.geminiKey}
+            openWeatherKey={apiKeyConfig.openWeatherKey}
+            geminiStatus={apiKeyConfig.geminiStatus}
+            openWeatherStatus={apiKeyConfig.openWeatherStatus}
+            isLoading={apiKeyConfig.isLoading}
+            onSaveGeminiKey={apiKeyConfig.saveGeminiKey}
+            onSaveOpenWeatherKey={apiKeyConfig.saveOpenWeatherKey}
+            onRemoveGeminiKey={apiKeyConfig.removeGeminiKey}
+            onRemoveOpenWeatherKey={apiKeyConfig.removeOpenWeatherKey}
+            onTestConnection={apiKeyConfig.testConnection}
+          />
+        )
       default:
         return null
     }

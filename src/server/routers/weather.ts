@@ -1,5 +1,6 @@
 import { z } from 'zod'
 import { env } from '@/env'
+import { keyStorageService } from '@/lib/key-storage-service'
 import { publicProcedure, router } from '../trpc'
 
 const LocationByNameInput = z.object({
@@ -10,6 +11,24 @@ const LocationByCoordsInput = z.object({
   latitude: z.number(),
   longitude: z.number(),
 })
+
+async function getOpenWeatherAPIKey(): Promise<string> {
+  try {
+    const userKey = await keyStorageService.getKey('openweather')
+    if (userKey) {
+      return userKey
+    }
+  }
+  catch (error) {
+    console.warn('Failed to retrieve user-configured OpenWeather API key:', error)
+  }
+
+  const envKey = env.NEXT_PUBLIC_OPENWEATHER_API_KEY || ''
+  if (!envKey) {
+    console.warn('No OpenWeather API key found. Please configure one in the dashboard or set NEXT_PUBLIC_OPENWEATHER_API_KEY environment variable.')
+  }
+  return envKey
+}
 
 async function fetchWeatherData(url: string) {
   const response = await fetch(url)
@@ -32,15 +51,15 @@ export const weatherRouter = router({
     .input(LocationByNameInput)
     .query(async ({ input }) => {
       try {
-        if (!env.NEXT_PUBLIC_OPENWEATHER_API_KEY) {
+        const apiKey = await getOpenWeatherAPIKey()
+        if (!apiKey) {
           throw new Error('Weather API key not configured')
         }
 
-        const weatherUrl = `https://api.openweathermap.org/data/2.5/weather?q=${encodeURIComponent(input.city)}&appid=${env.NEXT_PUBLIC_OPENWEATHER_API_KEY}&units=metric`
+        const weatherUrl = `https://api.openweathermap.org/data/2.5/weather?q=${encodeURIComponent(input.city)}&appid=${apiKey}&units=metric`
         const weatherData = await fetchWeatherData(weatherUrl)
 
-        // Fetch UV index
-        const uvUrl = `https://api.openweathermap.org/data/2.5/uvi?lat=${weatherData.coord.lat}&lon=${weatherData.coord.lon}&appid=${env.NEXT_PUBLIC_OPENWEATHER_API_KEY}`
+        const uvUrl = `https://api.openweathermap.org/data/2.5/uvi?lat=${weatherData.coord.lat}&lon=${weatherData.coord.lon}&appid=${apiKey}`
         let uvIndex = 0
         try {
           const uvResponse = await fetch(uvUrl)
@@ -90,15 +109,15 @@ export const weatherRouter = router({
     .input(LocationByCoordsInput)
     .query(async ({ input }) => {
       try {
-        if (!env.NEXT_PUBLIC_OPENWEATHER_API_KEY) {
+        const apiKey = await getOpenWeatherAPIKey()
+        if (!apiKey) {
           throw new Error('Weather API key not configured')
         }
 
-        const weatherUrl = `https://api.openweathermap.org/data/2.5/weather?lat=${input.latitude}&lon=${input.longitude}&appid=${env.NEXT_PUBLIC_OPENWEATHER_API_KEY}&units=metric`
+        const weatherUrl = `https://api.openweathermap.org/data/2.5/weather?lat=${input.latitude}&lon=${input.longitude}&appid=${apiKey}&units=metric`
         const weatherData = await fetchWeatherData(weatherUrl)
 
-        // Fetch UV index
-        const uvUrl = `https://api.openweathermap.org/data/2.5/uvi?lat=${weatherData.coord.lat}&lon=${weatherData.coord.lon}&appid=${env.NEXT_PUBLIC_OPENWEATHER_API_KEY}`
+        const uvUrl = `https://api.openweathermap.org/data/2.5/uvi?lat=${weatherData.coord.lat}&lon=${weatherData.coord.lon}&appid=${apiKey}`
         let uvIndex = 0
         try {
           const uvResponse = await fetch(uvUrl)
@@ -148,11 +167,12 @@ export const weatherRouter = router({
     .input(LocationByCoordsInput)
     .query(async ({ input }) => {
       try {
-        if (!env.NEXT_PUBLIC_OPENWEATHER_API_KEY) {
+        const apiKey = await getOpenWeatherAPIKey()
+        if (!apiKey) {
           throw new Error('Weather API key not configured')
         }
 
-        const forecastUrl = `https://api.openweathermap.org/data/2.5/forecast?lat=${input.latitude}&lon=${input.longitude}&appid=${env.NEXT_PUBLIC_OPENWEATHER_API_KEY}&units=metric`
+        const forecastUrl = `https://api.openweathermap.org/data/2.5/forecast?lat=${input.latitude}&lon=${input.longitude}&appid=${apiKey}&units=metric`
         const forecastData = await fetchWeatherData(forecastUrl)
 
         interface ForecastItem {

@@ -1,4 +1,5 @@
 import { aiRouter } from './routers/ai'
+import { apiKeysRouter } from './routers/api-keys'
 import { deviceRouter } from './routers/device'
 import { systemRouter } from './routers/system'
 import { weatherRouter } from './routers/weather'
@@ -9,6 +10,7 @@ export const appRouter = router({
   weather: weatherRouter,
   system: systemRouter,
   ai: aiRouter,
+  apiKeys: apiKeysRouter,
 })
 
 export type AppRouter = typeof appRouter

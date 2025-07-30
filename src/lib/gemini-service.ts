@@ -1,5 +1,6 @@
 import type { AIRecommendation, PredictiveData } from '@/types/dashboard'
 import { env } from '@/env'
+import { keyStorageService } from './key-storage-service'
 
 interface GeminiResponse {
   candidates: {
@@ -21,18 +22,34 @@ interface DeviceContext {
 }
 
 class GeminiService {
-  private readonly apiKey: string
   private readonly baseUrl = 'https://generativelanguage.googleapis.com/v1beta/models'
 
-  constructor() {
-    this.apiKey = env.GEMINI_API_KEY || ''
-    if (!this.apiKey) {
-      console.warn('Gemini API key not found. Please set GEMINI_API_KEY environment variable.')
+  /**
+   * Get API key from user configuration or fallback to environment variable
+   */
+  private async getAPIKey(): Promise<string> {
+    try {
+      // First try to get user-configured key
+      const userKey = await keyStorageService.getKey('gemini')
+      if (userKey) {
+        return userKey
+      }
     }
+    catch (error) {
+      console.warn('Failed to retrieve user-configured Gemini API key:', error)
+    }
+
+    // Fallback to environment variable
+    const envKey = env.GEMINI_API_KEY || ''
+    if (!envKey) {
+      console.warn('No Gemini API key found. Please configure one in the dashboard or set GEMINI_API_KEY environment variable.')
+    }
+    return envKey
   }
 
   private async callGemini(prompt: string): Promise<string> {
-    if (!this.apiKey) {
+    const apiKey = await this.getAPIKey()
+    if (!apiKey) {
       throw new Error('Gemini API key not configured')
     }
 
@@ -40,7 +57,7 @@ class GeminiService {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'X-goog-api-key': this.apiKey,
+        'X-goog-api-key': apiKey,
       },
       body: JSON.stringify({
         contents: [
