@@ -195,7 +195,7 @@
     },
     "publish": {
       "provider": "github",
-      "owner": "your-github-username",
+      "owner": "parazeeknova",
       "repo": "thermosense"
     }
   }
