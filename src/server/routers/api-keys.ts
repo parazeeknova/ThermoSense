@@ -1,6 +1,8 @@
 import type { ConnectionStatus } from '@/types/api-keys'
+import { z } from 'zod'
 import { RemoveAPIKeyInput, SaveAPIKeyInput, TestConnectionInput } from '@/lib/api-key-validation'
 import { apiValidationService } from '@/lib/api-validation-service'
+import { connectionMonitorService } from '@/lib/connection-monitor-service'
 import { keyStorageService } from '@/lib/key-storage-service'
 import { publicProcedure, router } from '../trpc'
 
@@ -210,6 +212,147 @@ export const apiKeysRouter = router({
         return {
           gemini: false,
           openweather: false,
+        }
+      }
+    }),
+
+  // Start monitoring for a specific service
+  startMonitoring: publicProcedure
+    .input(z.object({
+      service: z.enum(['gemini', 'openweather']),
+    }))
+    .mutation(async ({ input }) => {
+      try {
+        await connectionMonitorService.startMonitoring(input.service)
+        return { success: true }
+      }
+      catch (error) {
+        console.error(`Failed to start monitoring for ${input.service}:`, error)
+        return {
+          success: false,
+          error: error instanceof Error ? error.message : 'Unknown error',
+        }
+      }
+    }),
+
+  // Stop monitoring for a specific service
+  stopMonitoring: publicProcedure
+    .input(z.object({
+      service: z.enum(['gemini', 'openweather']),
+    }))
+    .mutation(async ({ input }) => {
+      try {
+        connectionMonitorService.stopMonitoring(input.service)
+        return { success: true }
+      }
+      catch (error) {
+        console.error(`Failed to stop monitoring for ${input.service}:`, error)
+        return {
+          success: false,
+          error: error instanceof Error ? error.message : 'Unknown error',
+        }
+      }
+    }),
+
+  // Start monitoring for all configured services
+  startAllMonitoring: publicProcedure
+    .mutation(async () => {
+      try {
+        await connectionMonitorService.startAllMonitoring()
+        return { success: true }
+      }
+      catch (error) {
+        console.error('Failed to start monitoring for all services:', error)
+        return {
+          success: false,
+          error: error instanceof Error ? error.message : 'Unknown error',
+        }
+      }
+    }),
+
+  // Stop monitoring for all services
+  stopAllMonitoring: publicProcedure
+    .mutation(async () => {
+      try {
+        connectionMonitorService.stopAllMonitoring()
+        return { success: true }
+      }
+      catch (error) {
+        console.error('Failed to stop monitoring for all services:', error)
+        return {
+          success: false,
+          error: error instanceof Error ? error.message : 'Unknown error',
+        }
+      }
+    }),
+
+  // Get real-time status from monitor service
+  getMonitorStatus: publicProcedure
+    .query(() => {
+      try {
+        return connectionMonitorService.getAllStatus()
+      }
+      catch (error) {
+        console.error('Failed to get monitor status:', error)
+        return {
+          gemini: {
+            status: 'error' as const,
+            message: 'Failed to get monitor status',
+            lastTested: new Date(),
+          },
+          openweather: {
+            status: 'error' as const,
+            message: 'Failed to get monitor status',
+            lastTested: new Date(),
+          },
+        }
+      }
+    }),
+
+  // Force immediate connection check
+  forceCheck: publicProcedure
+    .input(z.object({
+      service: z.enum(['gemini', 'openweather']),
+    }))
+    .mutation(async ({ input }) => {
+      try {
+        const status = await connectionMonitorService.forceCheck(input.service)
+        return { success: true, status }
+      }
+      catch (error) {
+        console.error(`Failed to force check for ${input.service}:`, error)
+        return {
+          success: false,
+          error: error instanceof Error ? error.message : 'Unknown error',
+          status: {
+            status: 'error' as const,
+            message: 'Failed to perform connection check',
+            lastTested: new Date(),
+          } satisfies ConnectionStatus,
+        }
+      }
+    }),
+
+  // Get monitoring state information
+  getMonitoringState: publicProcedure
+    .input(z.object({
+      service: z.enum(['gemini', 'openweather']),
+    }))
+    .query(({ input }) => {
+      try {
+        const state = connectionMonitorService.getMonitoringState(input.service)
+        return {
+          isMonitoring: state?.isMonitoring || false,
+          lastCheck: state?.lastCheck || null,
+          consecutiveFailures: state?.consecutiveFailures || 0,
+        }
+      }
+      catch (error) {
+        console.error(`Failed to get monitoring state for ${input.service}:`, error)
+        return {
+          isMonitoring: false,
+          lastCheck: null,
+          consecutiveFailures: 0,
         }
       }
     }),

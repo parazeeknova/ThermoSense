@@ -252,11 +252,19 @@ function DashboardContent() {
             geminiStatus={apiKeyConfig.geminiStatus}
             openWeatherStatus={apiKeyConfig.openWeatherStatus}
             isLoading={apiKeyConfig.isLoading}
+            isMonitoringEnabled={apiKeyConfig.isMonitoringEnabled}
+            geminiMonitorState={apiKeyConfig.geminiMonitorState}
+            openweatherMonitorState={apiKeyConfig.openweatherMonitorState}
             onSaveGeminiKey={apiKeyConfig.saveGeminiKey}
             onSaveOpenWeatherKey={apiKeyConfig.saveOpenWeatherKey}
             onRemoveGeminiKey={apiKeyConfig.removeGeminiKey}
             onRemoveOpenWeatherKey={apiKeyConfig.removeOpenWeatherKey}
             onTestConnection={apiKeyConfig.testConnection}
+            onStartMonitoring={apiKeyConfig.startMonitoring}
+            onStopMonitoring={apiKeyConfig.stopMonitoring}
+            onStartAllMonitoring={apiKeyConfig.startAllMonitoring}
+            onStopAllMonitoring={apiKeyConfig.stopAllMonitoring}
+            onForceCheck={apiKeyConfig.forceCheck}
           />
         )
       default:
