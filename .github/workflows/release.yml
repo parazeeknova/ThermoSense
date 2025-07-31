@@ -14,6 +14,9 @@ on:
 jobs:
   build:
     runs-on: ${{ matrix.os }}
+    
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
     strategy:
       matrix:
@@ -43,20 +46,15 @@ jobs:
       - name: Build Electron app (Linux)
         if: matrix.os == 'ubuntu-latest'
         run: npm run electron:dist:ci -- --linux
-        env:
-          GH_TOKEN: ${{ secrets.GH_TOKEN || secrets.GITHUB_TOKEN }}
 
       - name: Build Electron app (Windows)
         if: matrix.os == 'windows-latest'
         run: npm run electron:dist:ci -- --win
-        env:
-          GH_TOKEN: ${{ secrets.GH_TOKEN || secrets.GITHUB_TOKEN }}
 
       - name: Build Electron app (macOS)
         if: matrix.os == 'macos-latest'
         run: npm run electron:dist:ci -- --mac
         env:
-          GH_TOKEN: ${{ secrets.GH_TOKEN || secrets.GITHUB_TOKEN }}
           CSC_IDENTITY_AUTO_DISCOVERY: false
 
       - name: Upload artifacts (Linux)
