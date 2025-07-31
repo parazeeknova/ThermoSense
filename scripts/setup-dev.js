@@ -8,7 +8,6 @@ const os = require('node:os')
 console.log('🛠️  ThermoSense Development Setup')
 console.log('==================================')
 
-// Helper function to run commands
 function runCommand(command, description, optional = false) {
   console.log(`\n📦 ${description}...`)
   try {

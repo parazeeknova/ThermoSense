@@ -1,0 +1,396 @@
+name: Automated Build and Release
+
+on:
+  push:
+    branches: [main, master]
+  workflow_dispatch:
+
+env:
+  GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+jobs:
+  # Check if we should skip this build
+  check-skip:
+    runs-on: ubuntu-latest
+    outputs:
+      should-skip: ${{ steps.check.outputs.should-skip }}
+    steps:
+      - name: Check for [SKIP] in commit message
+        id: check
+        run: |
+          if [[ "${{ github.event.head_commit.message }}" == *"[SKIP]"* ]]; then
+            echo "should-skip=true" >> $GITHUB_OUTPUT
+            echo "🚫 Build skipped due to [SKIP] in commit message"
+          else
+            echo "should-skip=false" >> $GITHUB_OUTPUT
+            echo "✅ Build will proceed"
+          fi
+
+  # Run tests first
+  test:
+    needs: check-skip
+    if: needs.check-skip.outputs.should-skip != 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run type check
+        run: npm run type-check
+
+      - name: Run linting
+        run: npm run lint
+
+      - name: Build Next.js app (test build)
+        run: npm run build
+        env:
+          SKIP_ENV_VALIDATION: true
+
+      - name: Build Electron main process (test build)
+        run: npm run build:electron
+
+  # Version bump and tagging
+  version-and-tag:
+    needs: [check-skip, test]
+    if: needs.check-skip.outputs.should-skip != 'true' && needs.test.result == 'success'
+    runs-on: ubuntu-latest
+    outputs:
+      new-version: ${{ steps.version.outputs.new-version }}
+      new-tag: ${{ steps.version.outputs.new-tag }}
+      changelog: ${{ steps.changelog.outputs.changelog }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+
+      - name: Configure Git
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+
+      - name: Get current version and bump
+        id: version
+        run: |
+          # Get current version from package.json
+          CURRENT_VERSION=$(node -p "require('./package.json').version")
+          echo "Current version: $CURRENT_VERSION"
+
+          # Parse version parts
+          IFS='.' read -ra VERSION_PARTS <<< "$CURRENT_VERSION"
+          MAJOR=${VERSION_PARTS[0]}
+          MINOR=${VERSION_PARTS[1]}
+          PATCH=${VERSION_PARTS[2]}
+
+          # Increment patch version
+          NEW_PATCH=$((PATCH + 1))
+          NEW_VERSION="$MAJOR.$MINOR.$NEW_PATCH"
+          NEW_TAG="v$NEW_VERSION"
+
+          echo "New version: $NEW_VERSION"
+          echo "New tag: $NEW_TAG"
+
+          # Update package.json
+          npm version $NEW_VERSION --no-git-tag-version
+
+          # Output for next steps
+          echo "new-version=$NEW_VERSION" >> $GITHUB_OUTPUT
+          echo "new-tag=$NEW_TAG" >> $GITHUB_OUTPUT
+
+      - name: Generate changelog
+        id: changelog
+        run: |
+          # Get the last release tag (if any)
+          LAST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
+
+          if [ -z "$LAST_TAG" ]; then
+            echo "📝 First release - including all commits"
+            # First release - get all commits
+            CHANGELOG=$(git log --pretty=format:"- %s (%h)" --reverse)
+          else
+            echo "📝 Getting commits since last tag: $LAST_TAG"
+            # Get commits since last tag
+            CHANGELOG=$(git log ${LAST_TAG}..HEAD --pretty=format:"- %s (%h)" --reverse)
+          fi
+
+          # Escape newlines for GitHub output
+          CHANGELOG="${CHANGELOG//'%'/'%25'}"
+          CHANGELOG="${CHANGELOG//$'\n'/'%0A'}"
+          CHANGELOG="${CHANGELOG//$'\r'/'%0D'}"
+
+          echo "changelog=$CHANGELOG" >> $GITHUB_OUTPUT
+
+          # Also save to file for debugging
+          echo "$CHANGELOG" > changelog.txt
+
+      - name: Commit version bump
+        run: |
+          git add package.json
+          git commit -m "🔖 Bump version to ${{ steps.version.outputs.new-version }} [SKIP]"
+          git push origin ${{ github.ref_name }}
+
+      - name: Create and push tag
+        run: |
+          git tag ${{ steps.version.outputs.new-tag }}
+          git push origin ${{ steps.version.outputs.new-tag }}
+
+  # Build artifacts
+  build:
+    needs: [check-skip, test, version-and-tag]
+    if: needs.check-skip.outputs.should-skip != 'true' && needs.test.result == 'success'
+    runs-on: ${{ matrix.os }}
+
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.version-and-tag.outputs.new-tag }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build Next.js app
+        run: npm run build
+        env:
+          SKIP_ENV_VALIDATION: true
+
+      - name: Build Electron main process
+        run: npm run build:electron
+
+      - name: Build Electron app (Linux)
+        if: matrix.os == 'ubuntu-latest'
+        run: ./scripts/build-ci.sh --linux
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build Electron app (Windows)
+        if: matrix.os == 'windows-latest'
+        run: ./scripts/build-ci.bat --win
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build Electron app (macOS)
+        if: matrix.os == 'macos-latest'
+        run: ./scripts/build-ci.sh --mac
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          CSC_IDENTITY_AUTO_DISCOVERY: false
+
+      - name: Upload artifacts (Linux)
+        if: matrix.os == 'ubuntu-latest'
+        uses: actions/upload-artifact@v4
+        with:
+          name: linux-build
+          path: |
+            release/*.AppImage
+            release/*.deb
+            release/*.rpm
+            release/*.tar.gz
+
+      - name: Upload artifacts (Windows)
+        if: matrix.os == 'windows-latest'
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-build
+          path: |
+            release/*.exe
+            release/*.msi
+
+      - name: Upload artifacts (macOS)
+        if: matrix.os == 'macos-latest'
+        uses: actions/upload-artifact@v4
+        with:
+          name: macos-build
+          path: |
+            release/*.dmg
+            release/*.zip
+
+  # Create GitHub release
+  release:
+    needs: [check-skip, test, version-and-tag, build]
+    if: needs.check-skip.outputs.should-skip != 'true' && needs.test.result == 'success' && needs.build.result == 'success'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.version-and-tag.outputs.new-tag }}
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Display structure of downloaded files
+        run: ls -la artifacts/
+
+      - name: Create Release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ needs.version-and-tag.outputs.new-tag }}
+          release_name: ThermoSense ${{ needs.version-and-tag.outputs.new-tag }}
+          body: |
+            ## ThermoSense Desktop Application ${{ needs.version-and-tag.outputs.new-tag }}
+
+            ### 🚀 What's New:
+            ${{ needs.version-and-tag.outputs.changelog }}
+
+            ### 📦 Downloads:
+            - **Windows**: Download the `.exe` installer for easy installation
+            - **macOS**: Download the `.dmg` file and drag to Applications
+            - **Linux**: Download the `.AppImage` for universal compatibility, or `.deb`/`.rpm` for your distribution
+
+            ### 🛠️ Installation:
+            - **Windows**: Run the installer and follow the setup wizard
+            - **macOS**: Open the DMG and drag ThermoSense to Applications folder
+            - **Linux**: Make the AppImage executable (`chmod +x`) and run, or install the package file
+
+            ### 🔧 System Requirements:
+            - **Windows**: Windows 10 or later
+            - **macOS**: macOS 10.15 (Catalina) or later
+            - **Linux**: Most modern distributions with glibc 2.17+
+
+            ---
+            **Built from commit:** ${{ github.sha }}
+            **Build date:** $(date -u +"%Y-%m-%d %H:%M:%S UTC")
+          draft: false
+          prerelease: false
+
+      - name: Upload Linux AppImage
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: artifacts/linux-build/ThermoSense-${{ needs.version-and-tag.outputs.new-version }}.AppImage
+          asset_name: ThermoSense-${{ needs.version-and-tag.outputs.new-version }}-linux.AppImage
+          asset_content_type: application/octet-stream
+        continue-on-error: true
+
+      - name: Upload Linux DEB
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: artifacts/linux-build/thermosense_${{ needs.version-and-tag.outputs.new-version }}_amd64.deb
+          asset_name: ThermoSense-${{ needs.version-and-tag.outputs.new-version }}-linux.deb
+          asset_content_type: application/vnd.debian.binary-package
+        continue-on-error: true
+
+      - name: Upload Linux RPM
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: artifacts/linux-build/thermosense-${{ needs.version-and-tag.outputs.new-version }}.x86_64.rpm
+          asset_name: ThermoSense-${{ needs.version-and-tag.outputs.new-version }}-linux.rpm
+          asset_content_type: application/x-rpm
+        continue-on-error: true
+
+      - name: Upload Windows Installer
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: artifacts/windows-build/ThermoSense Setup ${{ needs.version-and-tag.outputs.new-version }}.exe
+          asset_name: ThermoSense-${{ needs.version-and-tag.outputs.new-version }}-windows.exe
+          asset_content_type: application/octet-stream
+        continue-on-error: true
+
+      - name: Upload Windows MSI
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: artifacts/windows-build/ThermoSense ${{ needs.version-and-tag.outputs.new-version }}.msi
+          asset_name: ThermoSense-${{ needs.version-and-tag.outputs.new-version }}-windows.msi
+          asset_content_type: application/x-msi
+        continue-on-error: true
+
+      - name: Upload macOS DMG
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: artifacts/macos-build/ThermoSense-${{ needs.version-and-tag.outputs.new-version }}.dmg
+          asset_name: ThermoSense-${{ needs.version-and-tag.outputs.new-version }}-macos.dmg
+          asset_content_type: application/octet-stream
+        continue-on-error: true
+
+      - name: Upload macOS ZIP
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: artifacts/macos-build/ThermoSense-${{ needs.version-and-tag.outputs.new-version }}-mac.zip
+          asset_name: ThermoSense-${{ needs.version-and-tag.outputs.new-version }}-macos.zip
+          asset_content_type: application/zip
+        continue-on-error: true
+
+  # Notification
+  notify:
+    needs: [check-skip, test, version-and-tag, build, release]
+    runs-on: ubuntu-latest
+    if: always() && needs.check-skip.outputs.should-skip != 'true'
+
+    steps:
+      - name: Notify success
+        if: needs.test.result == 'success' && needs.build.result == 'success' && needs.release.result == 'success'
+        run: |
+          echo "🎉 Automated release completed successfully!"
+          echo "✅ Tests passed"
+          echo "✅ Version bumped to ${{ needs.version-and-tag.outputs.new-version }}"
+          echo "✅ Tag ${{ needs.version-and-tag.outputs.new-tag }} created"
+          echo "✅ All platform builds completed"
+          echo "✅ Release created with artifacts"
+
+      - name: Notify failure
+        if: needs.test.result == 'failure' || needs.build.result == 'failure' || needs.release.result == 'failure'
+        run: |
+          echo "❌ Automated release failed!"
+          echo "Test result: ${{ needs.test.result }}"
+          echo "Build result: ${{ needs.build.result }}"
+          echo "Release result: ${{ needs.release.result }}"
+          echo "Check the logs for details."
+          exit 1
+
+      - name: Notify skip
+        if: needs.check-skip.outputs.should-skip == 'true'
+        run: |
+          echo "🚫 Build and release skipped due to [SKIP] in commit message"
