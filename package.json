@@ -14,7 +14,7 @@
     "electron": "npm run build:electron && cross-env NODE_ENV=development electron .",
     "electron:dev": "concurrently --kill-others \"npm run dev:web\" \"npm run build:electron && wait-on http-get://localhost:3000 && cross-env NODE_ENV=development electron .\"",
     "electron:dist": "npm run build && npm run build:electron && electron-builder",
-    "electron:dist:ci": "npm run build && npm run build:electron && electron-builder --publish=never --config.publish=null",
+    "electron:dist:ci": "npm run build && npm run build:electron && electron-builder --config electron-builder-ci.json --publish=never",
     "electron:dist:all": "npm run build && npm run build:electron && electron-builder --mac --win --linux",
     "electron:dist:win": "npm run build && npm run build:electron && electron-builder --win",
     "electron:dist:mac": "npm run build && npm run build:electron && electron-builder --mac",
@@ -84,6 +84,7 @@
     "appId": "com.thermosense.app",
     "productName": "ThermoSense",
     "copyright": "Copyright © 2025 ThermoSense",
+    "publish": null,
     "directories": {
       "output": "release",
       "buildResources": "build"
