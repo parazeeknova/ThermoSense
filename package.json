@@ -2,6 +2,10 @@
   "name": "thermosense",
   "version": "1.0.0",
   "private": true,
+  "author": {
+    "name": "parazeeknova",
+    "email": "dev.hashcodes@gmail.com"
+  },
   "main": "dist/main.js",
   "scripts": {
     "dev:web": "next dev",
@@ -170,6 +174,7 @@
     "linux": {
       "icon": "build/icons/",
       "category": "Utility",
+      "maintainer": "ThermoSense Team <contact@thermosense.app>",
       "target": [
         {
           "target": "AppImage",
@@ -190,7 +195,8 @@
       ]
     },
     "deb": {
-      "depends": ["gconf2", "gconf-service", "libnotify4", "libappindicator1", "libxtst6", "libnss3"]
+      "depends": ["gconf2", "gconf-service", "libnotify4", "libappindicator1", "libxtst6", "libnss3"],
+      "maintainer": "ThermoSense Team <contact@thermosense.app>"
     },
     "rpm": {
       "depends": ["libnotify", "libappindicator"]

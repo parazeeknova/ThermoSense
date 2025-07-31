@@ -27,7 +27,9 @@
     {
       "from": "assets/",
       "to": "assets/",
-      "filter": ["**/*"]
+      "filter": [
+        "**/*"
+      ]
     }
   ],
   "mac": {
@@ -40,11 +42,17 @@
     "target": [
       {
         "target": "dmg",
-        "arch": ["x64", "arm64"]
+        "arch": [
+          "x64",
+          "arm64"
+        ]
       },
       {
         "target": "zip",
-        "arch": ["x64", "arm64"]
+        "arch": [
+          "x64",
+          "arm64"
+        ]
       }
     ]
   },
@@ -67,15 +75,23 @@
     "target": [
       {
         "target": "nsis",
-        "arch": ["x64", "ia32"]
+        "arch": [
+          "x64",
+          "ia32"
+        ]
       },
       {
         "target": "msi",
-        "arch": ["x64", "ia32"]
+        "arch": [
+          "x64",
+          "ia32"
+        ]
       },
       {
         "target": "portable",
-        "arch": ["x64"]
+        "arch": [
+          "x64"
+        ]
       }
     ]
   },
@@ -90,29 +106,49 @@
   "linux": {
     "icon": "build/icons/",
     "category": "Utility",
+    "maintainer": "Parazeeknova <dev.hashcodes@gmail.com>",
     "target": [
       {
         "target": "AppImage",
-        "arch": ["x64"]
+        "arch": [
+          "x64"
+        ]
       },
       {
         "target": "deb",
-        "arch": ["x64"]
+        "arch": [
+          "x64"
+        ]
       },
       {
         "target": "rpm",
-        "arch": ["x64"]
+        "arch": [
+          "x64"
+        ]
       },
       {
         "target": "tar.gz",
-        "arch": ["x64"]
+        "arch": [
+          "x64"
+        ]
       }
     ]
   },
   "deb": {
-    "depends": ["gconf2", "gconf-service", "libnotify4", "libappindicator1", "libxtst6", "libnss3"]
+    "depends": [
+      "gconf2",
+      "gconf-service",
+      "libnotify4",
+      "libappindicator1",
+      "libxtst6",
+      "libnss3"
+    ],
+    "maintainer": "Parazeeknova <dev.hashcodes@gmail.com>"
   },
   "rpm": {
-    "depends": ["libnotify", "libappindicator"]
+    "depends": [
+      "libnotify",
+      "libappindicator"
+    ]
   }
 }
