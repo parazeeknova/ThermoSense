@@ -1,3 +1,9 @@
+> [!NOTE]
+> This project was developed as part of an internship task, I won't be maintaining it actively. Feel free to fork and contribute!
+
+> [!WARNING]
+> This project contains a nextjs app with a electron wrapper (pretty janky setup ik) but it works. The app is not meant to be run in production. Also the build files does not work properly, so you will have to run the app in development mode. The app is not meant to be run in production. Also the build files does not work properly, so you will have to run the app in development mode.
+
 <div align="center">
 
 <img src="./assets/thermosense.png" alt="thermosense-banner" width="100%">
@@ -39,10 +45,13 @@ ThermoSense is **ambient-aware battery health advisor** that bridges the gap bet
   Centralized hub for AI recommendations, alerts, and actionable insights.
 - **Responsive & Modern UI:**
   Built with React, Next.js, and Tailwind CSS for a seamless experience across devices.
+- **Electron Wrapper:**
+  Provides a desktop application experience with system-level access for real-time monitoring and notifications.
+- **Many more features...**
 
 ## Setup & Installation
 
-### Environment Variables - Required for AI & Weather
+### Environment Variables - Required for AI & Weather (Can be configured in the app itself)
 
 Create a `.env.local` file in the root directory:
 
@@ -52,8 +61,17 @@ GEMINI_API_KEY=your_google_gemini_api_key_here
 # Required for weather data
 NEXT_PUBLIC_OPENWEATHER_API_KEY=your_openweather_api_key_here
 ```
+### Running in development mode
+```bash
+# (to build the nextjs app)
+npm run build
+# (to build the electron app)
+npm run build:electron
+# (to run the app)
+npm run electron:dev
+```
 
-## Screenshots
+## Screenshots (old)
 
 |          Dashboard Overview          |              Analytics               |                 More Analytics                 |           Draggable Cards            |
 | :----------------------------------: | :----------------------------------: | :--------------------------------------------: | :----------------------------------: |
